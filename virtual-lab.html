@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Виртуалды зертхана: қауіпсіздік ережелері</title>
+<style>
+:root{--bg:#eef3f1;--sf:#fff;--ink:#12312e;--mut:#5b7370;--ln:#cfdcd9;--ac:#e8590c;--ok:#2b8a3e;--okb:#e3f4e6;--bad:#c92a2a;--badb:#fbe4e4;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1c1b;--sf:#172928;--ink:#e6f1ef;--mut:#93aaa6;--ln:#2a4140;--ac:#ff8a4c;--ok:#69db7c;--okb:#173a20;--bad:#ff8787;--badb:#431c1c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1c1b;--sf:#172928;--ink:#e6f1ef;--mut:#93aaa6;--ln:#2a4140;--ac:#ff8a4c;--ok:#69db7c;--okb:#173a20;--bad:#ff8787;--badb:#431c1c;color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:640px;margin:0 auto;padding:16px}
+h1{font-size:1.5rem;line-height:1.2;margin:8px 0 4px}
+p{margin:0 0 10px}
+.sub{color:var(--mut);margin-bottom:14px}
+.tabs{display:flex;gap:6px;margin-bottom:14px}
+.tabs button{flex:1;padding:10px 6px;border:2px solid var(--ln);background:var(--sf);color:var(--ink);border-radius:10px;font:inherit;font-weight:600;cursor:pointer}
+.tabs button[aria-selected=true]{border-color:var(--ac);background:var(--ac);color:#fff}
+.bench{background:var(--sf);border:2px solid var(--ln);border-radius:14px;padding:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.item{display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:12px 6px;border:2px solid var(--ln);border-radius:12px;background:var(--bg);color:var(--ink);font:inherit;font-size:.88rem;cursor:pointer;min-height:104px}
+.item .e{font-size:2rem;line-height:1}
+.item.sel{border-color:var(--ac);box-shadow:inset 0 0 0 2px var(--ac)}
+.item.good{border-color:var(--ok);background:var(--okb)}
+.item.miss{border-color:var(--bad);background:var(--badb)}
+.item small{color:var(--mut);font-size:.78rem}
+.btn{display:block;width:100%;padding:13px;border:0;border-radius:10px;background:var(--ink);color:var(--bg);font:inherit;font-weight:700;cursor:pointer;margin-top:8px}
+.btn.ac{background:var(--ac);color:#fff}
+.meter{height:8px;background:var(--ln);border-radius:6px;overflow:hidden;margin:6px 0 12px}
+.meter i{display:block;height:100%;background:var(--ok);width:0;transition:width .3s}
+.scene{font-size:3rem;text-align:center;margin:4px 0;letter-spacing:.1em}
+.q{font-size:1.1rem;font-weight:700;margin:6px 0 10px}
+.opt{display:block;width:100%;text-align:left;padding:12px;margin-bottom:8px;border:2px solid var(--ln);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit;cursor:pointer}
+.opt.good{border-color:var(--ok);background:var(--okb)}
+.opt.bad{border-color:var(--bad);background:var(--badb)}
+.fb{padding:12px;border-radius:10px;margin:8px 0;background:var(--bg);border-left:5px solid var(--ac)}
+.fb.ok{border-color:var(--ok)}.fb.no{border-color:var(--bad)}
+.big{font-size:2.4rem;font-weight:800;text-align:center;margin:10px 0}
+.aid{display:grid;gap:8px}
+.aid div{background:var(--bg);border:2px solid var(--ln);border-radius:10px;padding:10px}
+.aid b{display:block}
+button:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.hide{display:none}
+</style>
+</head>
+<body>
+<main>
+<h1>Виртуалды зертхана</h1>
+<p class="sub">Органикалық химия: қауіпсіздік ережелері. Қауіпті тап, жағдайды шеш.</p>
+<div class="tabs" role="tablist">
+<button role="tab" aria-selected="true" data-t="a">Бөлмені тексер</button>
+<button role="tab" aria-selected="false" data-t="b">Жағдайлар</button>
+<button role="tab" aria-selected="false" data-t="c">Көмек</button>
+</div>
+<section id="a" class="bench"></section>
+<section id="b" class="bench hide"></section>
+<section id="c" class="bench hide"></section>
+</main>
+<script>
+var ROOM=[
+{e:"🚬",t:"Студент лаборатория ішінде темекі тартып тұр",v:1,r:"Лаборатория ішінде темекі тартуға, тамақ жеуге қатаң тыйым салынады."},
+{e:"🎒",t:"Сөмке мен сырт киім үстелдің үстінде жатыр",v:1,r:"Үстелдің үстінде портфельдерді, дорбаларды және бөтен заттарды ұстауға болмайды."},
+{e:"🧪",t:"Банкада этикетка жоқ",v:1,r:"Заттар сақталатын барлық ыдыста заттың атауы жазылған этикетка болуы тиіс."},
+{e:"🧍",t:"Студент лабораторияда жалғыз жұмыс істеп жатыр",v:1,r:"Жалғыз жұмыс істеуге болмайды: апат кезінде ешкім көмектесе алмайды."},
+{e:"🔥",t:"Эфир ашық отта қыздырылып жатыр",v:1,r:"Жанғыш еріткіштерді ашық отта қыздыруға болмайды. Тек кері мұздағышы бар су моншасында қыздырады."},
+{e:"🚰",t:"Раковинаға еріткіш пен қышқыл қалдығы құйылып жатыр",v:1,r:"Раковинаға еріткіш, қышқыл, сілті және иісі қатты заттарды құюға тыйым салынады."},
+{e:"🥼",t:"Студент мақта-матадан тігілген халат киіп жұмыс істеп жатыр",v:0,r:"Дұрыс: әр орындаушыда мақта-матадан тігілген жұмыс халаты болуы керек."},
+{e:"🥽",t:"Студент қорғаныс көзілдірігін киіп, шыныменжұмыс істеп жатыр",v:0,r:"Дұрыс: шынымен жұмыс істегенде қорғаныс көзілдірігі қажет."},
+{e:"🌬️",t:"Иісі бар реакция тартып шығару шкафында жүріп жатыр",v:0,r:"Дұрыс: ауаны ластауы мүмкін жұмыстар тартып шығару шкафында жасалады."},
+{e:"🧯",t:"Отсөндіргіш пен құм салынған жәшік өз орнында тұр",v:0,r:"Дұрыс: әр қызметкер өртке қарсы құралдардың орнын білуі керек."}
+];
+var SC=[
+{e:"🔥🧪",q:"Эфир жанып кетті. Не істейсің?",o:["Суды құямын","Барлық жанғыштарды сөндіріп, жалынды асбест көрпемен жабамын не құммен көмемін","Колбаны алып, далаға жүгіремін"],a:1,x:"Эфир суда ерімейді, сондықтан су жану ошағын үлкейтеді. Жанғыштарды сөндіріп, жалынды көрпемен жабу, құммен көму немесе СО₂ отсөндіргішін қолдану керек."},
+{e:"🔥🥃",q:"Ацетон жанып кетті. Суға қатысты не айтуға болады?",o:["Ацетон суда ериді, сондықтан сумен сөндіруге болады","Суды ешқашан қолданбаймын","Тек бензин құяды"],a:0,x:"Суда еритін жанғыш заттарды (спирт, ацетон) сумен сөндіруге болады. Ал суда ерімейтін заттарға (эфир, бензол, бензин, скипидар) су қолдануға болмайды."},
+{e:"🧍‍♂️🔥",q:"Көрші студенттің халаты жанып кетті. Не істейсің?",o:["Қашуына мүмкіндік беремін","Үстіне жүн, киіз не асбест көрпе немесе халат жабамын","Үстіне эфир құямын"],a:1,x:"Қашуға мүмкіндік беруге болмайды: қозғалыс жалынды үлкейтеді. Жанған адамның үстін көрпемен жабу керек."},
+{e:"🧴✋",q:"Қолыңа қышқыл тамды. Бірінші қадам?",o:["Алдымен сілті құямын","Тез арада мол сумен жуамын, содан соң тағам содасының 3 %-дық ерітіндісімен өңдеймін","Күтемін"],a:1,x:"Қышқыл күйігінде алдымен мол су, содан соң 3 % сода ерітіндісі. Сілті күйігінде су, сосын сірке қышқылының 3 %-дық ерітіндісі, содан соң қайтадан су."},
+{e:"👁️💧",q:"Көзге сілті түсті. Не істейсің?",o:["Көзді уқалаймын","Тез арада мол сумен жуамын, содан соң бор қышқылымен немесе сода ерітіндісімен суланған тампонмен өңдеп, қайта сумен жуамын","Сіркемен ғана жуамын"],a:1,x:"Қышқыл не сілті көзге тисе, бірінші мол су. Содан кейін сода немесе бор қышқылы суланған тампон, сосын қайтадан су. Бұл ретті сақта."},
+{e:"🧪⬆️",q:"Пробиркадағы сұйықты қыздырудасың. Ауызын қайда бұрасың?",o:["Өзіме қарай","Көршіме қарай","Өзімнен және жұмыс істеушілерден басқа жаққа"],a:2,x:"Ыстық масса кенет шашырауы мүмкін, сондықтан ыдыстың ауызы адамдардан басқа жаққа бұрылады. Ашық қыздырылатын ыдысқа үстінен қарауға болмайды."},
+{e:"👃🧴",q:"Белгісіз заттың иісін білгің келеді. Қалай жасайсың?",o:["Ыдысқа еңкейіп, кеудемен терең жұтамын","Қолмен буын өзіме қарай абайлап бағыттаймын","Дәмін татып көремін"],a:1,x:"Дәмін көруге қатаң тыйым салынады. Иіскеу тек қолдың жеңіл қозғалысымен буды өзіңе қарай бағыттау арқылы жүзеге асады."},
+{e:"🧯💧",q:"Лабораторияда көп жанғыш сұйық төгілді. Не істейсің?",o:["Бәрін қалдырып кетемін","Жанғыштар мен электр қыздырғыштарды сөндіремін, терезелерді ашамын, сұйықты шүберекпен жинаймын","Сіріңке жағып қараймын"],a:1,x:"Алдымен от көздерін сөндіру, желдету, содан кейін төгілген сұйықты шүберекпен не орамалмен жинау."},
+{e:"🧪🔧",q:"Пробиркаға шыны түтік кигізесің. Қалай қауіпсіз?",o:["Күшпен итеремін","Түтік ұшын балқытып, сумен не глицеринмен сулап, қолды орамалмен орап қондырамын","Құрғақ күйде қолмен сындырамын"],a:1,x:"Түтік ұшын балқытып, сумен не глицеринмен сулайды. Түтікті пробкаға жақын жерден ұстап, қолды орамалмен орайды."}
+];
+var AID=[["Термиялық күйік","Күйген жерді калий перманганатының ерітіндісімен не этил спиртімен мол сулаңыз. Ауыр күйікте күйікке арналған май жағыңыз."],["Қышқыл күйігі","Мол сумен жуыңыз, содан соң тағам содасының 3 %-дық ерітіндісімен жуыңыз."],["Сілті күйігі","Сумен жуыңыз, сірке қышқылының 3 %-дық ерітіндісімен сулаңыз, қайтадан сумен жуыңыз."],["Көзге қышқыл не сілті түсті","Тез арада мол сумен жуыңыз, содан соң сода ерітіндісімен не бор қышқылымен суланған тампонмен өңдеп, қайта сумен жуыңыз."],["Суда ерімейтін органикалық зат теріге түсті","Алдымен заттың еріткішінің көп мөлшерімен жуыңыз, содан соң спиртпен жуып, май жағыңыз."],["Реактив ішке түсті","Көп су ішіңіз. Қышқылдан уланғанда 2 %-дық сода ерітіндісін, сілтіден уланғанда 2 %-дық сірке не лимон қышқылының стақанын ішіңіз. Таза ауаға шығарып, дәрігер шақырыңыз."],["От","Жанғыштарды сөндіріп, жалынды көрпемен жабыңыз не құммен көміңіз. Суда ерімейтін заттарға су қолданбаңыз."]];
+var $=function(i){return document.getElementById(i)};
+document.querySelectorAll(".tabs button").forEach(function(b){b.onclick=function(){
+document.querySelectorAll(".tabs button").forEach(function(x){x.setAttribute("aria-selected",x===b)});
+["a","b","c"].forEach(function(k){$(k).classList.toggle("hide",k!==b.dataset.t)})}});
+
+/* 1. Room check */
+var sel={},done=false;
+function renderRoom(){
+var h='<p><b>Суреттегі жағдайлардың қайсысы ережені бұзады?</b> Бұзатындарды белгіле де, «Тексеру» түймесін бас.</p><div class="grid">';
+ROOM.forEach(function(r,i){var c="item";
+if(done){var s=!!sel[i];if(r.v&&s)c+=" good";else if(r.v&&!s)c+=" miss";else if(!r.v&&s)c+=" miss"}
+else if(sel[i])c+=" sel";
+h+='<button class="'+c+'" data-i="'+i+'"><span class="e">'+r.e+'</span>'+r.t+(done?'<small>'+r.r+'</small>':'')+'</button>'});
+h+='</div>';
+if(done){var ok=0;ROOM.forEach(function(r,i){if(!!sel[i]===!!r.v)ok++});
+h+='<div class="big">'+ok+' / '+ROOM.length+'</div><p style="text-align:center">Жасыл: дұрыс жауап. Қызыл: қате не өткізіп алған.</p><button class="btn ac" id="rr">Қайта бастау</button>'}
+else h+='<button class="btn ac" id="rc">Тексеру</button>';
+$("a").innerHTML=h;
+$("a").querySelectorAll(".item").forEach(function(b){b.onclick=function(){if(done)return;var i=b.dataset.i;sel[i]=!sel[i];renderRoom()}});
+if($("rc"))$("rc").onclick=function(){done=true;renderRoom()};
+if($("rr"))$("rr").onclick=function(){sel={};done=false;renderRoom()}}
+renderRoom();
+
+/* 2. Scenarios */
+var n=0,score=0,ans=false;
+function renderSc(){
+var el=$("b");
+if(n>=SC.length){
+var p=Math.round(score/SC.length*100);
+el.innerHTML='<div class="big">'+score+' / '+SC.length+'</div><p style="text-align:center">'+(p>=80?"Өте жақсы! Сен лабораторияда жұмыс істеуге дайынсың.":p>=50?"Жақсы, бірақ кейбір ережелерді қайталап шық.":"Ережелерді қайта оқып, қайталап көр.")+'</p><button class="btn ac" id="again">Қайта бастау</button>';
+$("again").onclick=function(){n=0;score=0;ans=false;renderSc()};return}
+var s=SC[n];
+var h='<div class="meter"><i style="width:'+(n/SC.length*100)+'%"></i></div><p class="sub">Жағдай '+(n+1)+' / '+SC.length+'. Ұпай: '+score+'</p><div class="scene" aria-hidden="true">'+s.e+'</div><div class="q">'+s.q+'</div>';
+s.o.forEach(function(t,i){h+='<button class="opt" data-i="'+i+'">'+t+'</button>'});
+h+='<div id="fb"></div>';
+el.innerHTML=h;
+el.querySelectorAll(".opt").forEach(function(b){b.onclick=function(){
+if(ans)return;ans=true;var i=+b.dataset.i,ok=i===s.a;if(ok)score++;
+el.querySelectorAll(".opt")[s.a].classList.add("good");
+if(!ok)b.classList.add("bad");
+$("fb").innerHTML='<div class="fb '+(ok?"ok":"no")+'"><b>'+(ok?"Дұрыс!":"Қате.")+'</b> '+s.x+'</div><button class="btn" id="nx">'+(n<SC.length-1?"Келесі жағдай":"Нәтижені көру")+'</button>';
+$("nx").onclick=function(){n++;ans=false;renderSc()}}})}
+renderSc();
+
+/* 3. First aid */
+$("c").innerHTML='<p><b>Бірінші көмек және өрт сөндіру</b></p><div class="aid">'+AID.map(function(a){return '<div><b>'+a[0]+'</b>'+a[1]+'</div>'}).join("")+'</div>';
+</script>
+</body>
+</html>
