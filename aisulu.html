@@ -1,0 +1,172 @@
+<!DOCTYPE html><html lang="kk"><head><meta charset="utf-8"><title>3D виртуалды зертхана: Фенолдар</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#dfe7ea;--fg:#1c2530;--card:#fff;--ac:#0f766e;--bd:#cdd7de}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#10171d;--fg:#e6edf3;--card:#1a232c;--ac:#2dd4bf;--bd:#34424f}}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,sans-serif;padding:8px}
+h1{font-size:17px;margin:2px 0 6px}.warn{background:#b91c1c;color:#fff;border-radius:8px;padding:5px 10px;font-size:12.5px}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin:8px 0}.tabs button{flex:none}
+button{font:inherit;border:1px solid var(--bd);background:var(--card);color:var(--fg);border-radius:8px;padding:7px 11px}button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+#wrap{position:relative;height:62vh;min-height:380px;border-radius:14px;overflow:hidden;box-shadow:0 6px 20px rgba(0,0,0,.35);margin-top:6px;background:#cfdde2}
+#cv{width:100%;height:100%;display:block;touch-action:none}#lbs{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lb,.bl{position:absolute;transform:translate(-50%,-50%);font-size:11px;text-align:center;border-radius:6px;padding:1px 6px;white-space:nowrap}
+.lb{background:rgba(255,255,255,.85);color:#17323a;font-weight:600}.bl{background:rgba(15,25,30,.75);color:#e2eef2}
+.hintb{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.55);color:#fff;font-size:11.5px;padding:3px 8px;border-radius:8px;pointer-events:none}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:10px;margin-top:8px}
+.sch{overflow-x:auto;margin-top:8px;background:linear-gradient(135deg,rgba(15,118,110,.1),rgba(37,99,235,.1));border-radius:10px;padding:4px}.sch svg{display:block;max-width:none;color:var(--fg)}
+.m{animation:pop .7s both;transform-box:fill-box;transform-origin:center}@keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+.sch line{stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-dasharray:80;animation:dash 1s ease-out both}@keyframes dash{from{stroke-dashoffset:80}to{stroke-dashoffset:0}}
+#fin{display:none;border:2px solid var(--ac)}
+</style></head><body>
+<h1>🧪 3D виртуалды зертхана · 11. Фенолдар</h1>
+<div class="warn">⚠️ Абайлаңдар! Фенолдар теріні күйдіреді! Қолғап пен көзілдірік киіңдер.</div>
+<div class="tabs" id="tabs"></div>
+<div class="card" id="pr" style="margin:0 0 6px"></div>
+<div id="wrap"><canvas id="cv"></canvas><div id="lbs"></div><div class="hintb">Бөтелкені ұстап пробиркаға апар · фонды сүйреп айнал</div></div>
+<div class="card" id="log">👆 Реагент бөтелкесін ұстап, пробиркаға апарып жіберіңіз.</div>
+<div class="card" id="fin"></div>
+<div style="margin-top:8px"><button onclick="build(cn)">↺ Қайта бастау</button></div>
+<script>
+const W='#e6f1f5';
+const D2R=Math.PI/180,pt=(c,i,r)=>[c[0]+r*Math.cos((180+60*i)*D2R),c[1]+r*Math.sin((180+60*i)*D2R)],lp=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t],
+ln=(a,b)=>`<line x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}"/>`,
+col=l=>/^=?O/.test(l)?'#d33':/^Br/.test(l)?'#a0521d':/^N/.test(l)?'#2563eb':/^Fe/.test(l)?'#e08a00':'currentColor',
+tx=(x,y,t,a,z,c)=>`<text x="${x}" y="${y}" text-anchor="${a||'middle'}" font-size="${z||15}" font-weight="700" fill="${c||'currentColor'}" dominant-baseline="middle">${t}</text>`;
+function ring(cx,cy,o){const c=[cx,cy],R=22,D=o.d||[0,2,4];let s='';
+for(let i=0;i<6;i++){const a=pt(c,i,R),b=pt(c,(i+1)%6,R);s+=ln(a,b);if(D.includes(i))s+=ln(lp(a,c,.18),lp(b,c,.18))}
+for(const i in o.s){const l=o.s[i],a=pt(c,+i,R),b=pt(c,+i,R+15),u=Math.cos((180+60*i)*D2R),v=Math.sin((180+60*i)*D2R);
+if((o.q||[]).includes(+i)){const p=[-v*2.5,u*2.5];s+=ln([a[0]+p[0],a[1]+p[1]],[b[0]+p[0],b[1]+p[1]])+ln([a[0]-p[0],a[1]-p[1]],[b[0]-p[0],b[1]-p[1]])}else s+=ln(a,b);
+s+=tx(b[0]+(u>.1?3:u<-.1?-3:0),b[1]+v*6,l,u>.1?'start':u<-.1?'end':'middle',15,col(l))}return s}
+function scheme(rows){return rows.map(row=>{let x=8,s='',n=0;const Y=50,nm=(cx,t)=>t?tx(cx,108,t,'middle',11,'#7a8794'):'';
+for(const t of row){const g=`<g class="m" style="animation-delay:${n++*.2}s">`;
+if(t.m){s+=g+ring(x+60,Y,t.m)+nm(x+60,t.n)+'</g>';x+=120}
+else if(t.x){s+=g+tx(x+35,Y,t.x,'middle',17)+nm(x+35,t.n)+'</g>';x+=70}
+else if(t.op){s+=g+tx(x+18,Y,t.op,'middle',22)+'</g>';x+=36}
+else if(t.k){s+=g+tx(x+12,Y,t.k,'middle',22,'#0f766e')+'</g>';x+=26}
+else if('arr' in t){s+=g+ln([x+5,Y],[x+75,Y])+`<path d="M${x+78} ${Y}l-10-5v10z" fill="currentColor"/>`+tx(x+40,Y-12,t.arr,'middle',11,'#0f766e')+'</g>';x+=85}
+else if(t.ind){const c1=x+42,c2=c1+86;s+=g+ring(c1,Y,{d:[1,4],s:{0:'O'},q:[0]})+ln([c1+22,Y-2.5],[c1+36,Y-2.5])+ln([c1+22,Y+2.5],[c1+36,Y+2.5])+tx(c1+42,Y,'N','middle',15,'#2563eb')+ln([c1+48,Y],[c1+64,Y])+ring(c2,Y,{s:{3:t.ind}})+nm(c1+43,t.n)+'</g>';x+=190}}
+return `<svg viewBox="0 0 ${x+8} 118" width="${x+8}" height="118">${s}</svg>`}).join('')}
+const ph={m:{0:'OH'},n:'фенол'},BQ={m:{d:[1,4],s:{0:'O',3:'O'},q:[0,3]},n:'п-бензохинон'},HQ={m:{s:{0:'OH',3:'OH'}},n:'гидрохинон'},PC={m:{s:{0:'OH',1:'OH'}},n:'пирокатехин'},RS={m:{s:{0:'OH',2:'OH'}},n:'резорцин'},PG={m:{s:{0:'OH',1:'OH',2:'OH'}},n:'пирогаллол'},o_=t=>({op:'+'}),pl={op:'+'},ar=t=>({arr:t||''});
+const R={'0-1':[[ph,pl,{x:'NaOH'},ar(),{m:{0:'ONa'},n:'натрий феноляты'},pl,{x:'H₂O'}]],
+'0-2':[[{m:{0:'ONa'},n:'натрий феноляты'},pl,{x:'H₂SO₄'},ar(),{m:{0:'OH'},n:'фенол ↓ (лай)'},pl,{x:'NaHSO₄'}]],
+'1-0':[[ph]],'1-1':[[ph,pl,{k:'3'},{x:'Br₂'},ar(),{m:{0:'OH',1:'Br',3:'Br',5:'Br'},n:'2,4,6-трибромфенол ↓'},pl,{x:'3HBr'}]],
+'1-2':[[{m:{0:'OH',1:'Br',3:'Br',5:'Br'},n:'трибромфенол'},pl,{x:'Br₂'},ar(),{m:{d:[1,4],s:{0:'O',1:'Br',3:'Br₂',5:'Br'},q:[0]},n:'тетрабромдиенон (сары)'},pl,{x:'HBr'}]],
+'2-1':[[ph,pl,{x:'MnO₄⁻'},ar('Na₂CO₃'),BQ,pl,{x:'MnO₂↓'}]],
+'3-3':[[ph,pl,{x:'HNO₂'},ar('H₂SO₄'),{m:{0:'OH',3:'N=O'},n:'п-нитрозофенол'},pl,{x:'H₂O'}],[{m:{0:'OH',3:'N=O'},n:'нитрозофенол'},pl,ph,ar('–H₂O'),{ind:'OH',n:'индофенол (қызғылт)'}]],
+'3-4':[[{ind:'OH',n:'индофенол'},pl,{x:'NaOH'},ar(),{ind:'ONa',n:'индофенолят (көкшіл-жасыл)'},pl,{x:'H₂O'}]],
+'4-1':[[{k:'6'},ph,pl,{x:'FeCl₃'},ar('–3HCl'),{m:{0:'Fe–O'},n:'феноляттың Fe-комплексі'}]],
+'4-2':[[HQ,ar('[O], –2H'),{...BQ,n:'п-бензохинон (сары)'}]],
+'5-0':[[PC,RS,HQ,PG]],'5-1':[[PC,ar('O₂, NaOH'),{m:{d:[2,4],s:{0:'O',1:'O'},q:[0,1]},n:'о-бензохинон (түсті)'}]],
+'6-0':[[RS,HQ,PC,PG]],'6-1':[[HQ,pl,{x:'2Ag⁺'},ar(),BQ,pl,{x:'2Ag↓'},pl,{x:'2H⁺'}]]};
+const RG={ph2:['Фенол+су','C₆H₅OH','#dfeaf0'],naoh:['10% NaOH','NaOH','#cfe8ff'],h2s:['10% H₂SO₄','H₂SO₄','#f1f1e6'],ph5:['5% фенол','C₆H₅OH',W],br2:['Бром суы','Br₂','#e8890c'],na2co3:['5% Na₂CO₃','Na₂CO₃','#dfeaf0'],kmno4:['1% KMnO₄','KMnO₄','#7a1fa2'],h2sc:['Конц. H₂SO₄','H₂SO₄','#efe6c8'],ice:['Мұзды су','','','ice'],nano2:['NaNO₂','NaNO₂','#f6f6f6'],s0:['1% фенол','C₆H₅OH',W],s1:['Пирокатехин','C₆H₄(OH)₂','#f0e6d8'],s2:['Резорцин','C₆H₄(OH)₂','#f4efe0'],s3:['Гидрохинон','C₆H₄(OH)₂','#efe9dc'],s4:['Пирогаллол','C₆H₃(OH)₃','#efe2d0'],fecl3:['2% FeCl₃','FeCl₃','#d9a21b'],naoh2:['2M NaOH','NaOH','#cfe8ff'],agno3:['1% AgNO₃','AgNO₃','#f2f2f2'],rod:['Шыны таяқша','','','rod']};
+const V=(x,t)=>typeof x=='function'?x(t):x,sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const FE={s0:'#6a5fc8',s1:'#2f9e55',s2:'#8a35c4',s3:'#3ea35a'},OB4={s0:'Фенол – көкшіл-күлгін түс.',s1:'Пирокатехин – жасыл түс.',s2:'Резорцин – күлгін түс.',s3:'Гидрохинон – жасыл, тез сарыға ауысады.'};
+const C5={s1:{c:'#2f9e55',r:'#6bc48a'},s2:{c:'#efe8dc',r:'#b99a78'},s3:{c:'#e3c21c',r:'#3ea35a'},s4:{c:'#5b3416',r:'#7b4a24'}},OB5={s1:'Пирокатехин – лезде жасыл дақ.',s2:'Резорцин – біраз уақыттан соң ғана әлсіз қоңыр сақина.',s3:'Гидрохинон – шеті жасыл, ортасы сары дақ.',s4:'Пирогаллол – қою қоңыр дақ.'};
+const C6={s2:{c:'#e8e4dc',r:'#cfcfcf'},s3:{c:'#6b6b6b',r:'#9a9a9a'},s1:{c:'#555',r:'#a8a8a8'},s4:{c:'#6b4423',r:'#e5e5e5'}},OB6={s2:'Резорцин күмісті өте баяу тотықсыздандырады.',s3:'Гидрохинон күмісті қарқынды тотықсыздандырады.',s1:'Пирокатехин күмісті қарқынды тотықсыздандырады.',s4:'Пирогаллол ең жылдам: қоңыр түс, бетінде металл күміс қабыршағы.'};
+const SOL=['s0','s1','s2','s3'],SOL4=['s1','s2','s3','s4'],sp4=(S)=>[0,1,2,3].map(i=>({n:(i+1)+'-дақ',S}));
+const E=[
+{n:'№25',t:'Феноляттардың түзілуі мен ыдырауы',p:'1) Пробиркаға фенол+су қоспасын құй. 2) Фенол ерігенше 10% NaOH тамшылат. 3) 10% H₂SO₄ тамшылат. Әр реагенттен кейін шыны таяқшамен араластыр.',X:['ph2','naoh','h2s','rod'],T:[{n:'Пробирка',S:[
+{u:'ph2',m:0,to:{f:.4,c:W,tb:.75},d:'Фенол суда нашар ериді, қоспа лайланды (эмульсия).',r:'1-0'},
+{u:'naoh',to:{f:.52,tb:0},d:'Ерітінді мөлдірленді: суда жақсы еритін натрий феноляты түзілді.',r:'0-1'},
+{u:'h2s',to:{f:.64,tb:.85},d:'Ерітінді қайта лайланды: фенол бөлінді (фенол – әлсіз қышқыл).',r:'0-2'}]}]},
+{n:'№26',t:'Фенолдың бром суымен әрекеттесуі',p:'1) 1 мл 5% фенол құй. 2) Бром суын тамшылат – ақ тұнба. 3) Бром суын артық қос – тұнба сарғаяды.',X:['ph5','br2','rod'],T:[{n:'Пробирка',S:[
+{u:'ph5',m:0,to:{f:.35,c:W},d:'Түссіз фенол ерітіндісі.',r:'1-0'},
+{u:'br2',to:{f:.5,c:'#f7e6c4',pc:'#fff',pa:1},d:'Бром суы түссізденіп, ақ тұнба – 2,4,6-трибромфенол түзілді.',r:'1-1'},
+{u:'br2',to:{f:.62,c:'#f4c26b',pc:'#f2d21f',pa:1},d:'Бромды артық қосқанда тұнба сары түске ауысты.',r:'1-2',q:'Неге жұмсақ жағдайда? –OH тобының +M әсерінен сақинаның орто-/пара- орындарындағы электрон тығыздығы артады, сондықтан катализатор мен қыздыру керек емес. Артық бромнан сары 2,4,4,6-тетрабромциклогексадиенон түзіледі.'}]}]},
+{n:'№27',t:'Фенолдың тотығуы',p:'1) Пробиркаға 1 мл фенол және 1 мл 5% Na₂CO₃ құй. 2) 1% KMnO₄ тамшылатып, араластыр.',X:['ph5','na2co3','kmno4','rod'],T:[{n:'Пробирка',S:[
+{u:'ph5',m:0,to:{f:.25,c:W},d:'Фенол ерітіндісі құйылды.'},{u:'na2co3',m:0,to:{f:.5,c:W},d:'Сілтілік орта жасалды.'},
+{u:'kmno4',to:{f:.6,c:'#f1e7d6',pc:'#6b3f1d',pa:1},d:'Күлгін түс сөнді, қоңыр MnO₂ тұнбасы түзілді: фенол тотығады, MnO₄⁻ тотықсызданады.',r:'2-1',q:'Оқулықта «мырыш (IV)» деп қате жазылған – дұрысы марганец (IV) оксиді MnO₂.'}]}]},
+{n:'№28',t:'Фенол + азотты қышқыл (индофенол)',p:'1) 0,5 мл конц. H₂SO₄ құй. 2) Фенол тамшылат. 3) Мұзды суда салқында. 4) NaNO₂ тамшылат. 5) Сілті қос.',X:['h2sc','ph5','ice','nano2','naoh','rod'],T:[{n:'Пробирка',S:[
+{u:'h2sc',m:0,to:{f:.25,c:'#f0ecd8'},d:'Конц. H₂SO₄ құйылды – өте абай болыңыз!'},{u:'ph5',to:{f:.3},d:'Фенол күкірт қышқылымен араласты.'},
+{u:'ice',m:0,to:{ice:1},d:'Қоспа мұзды суда салқындады.'},
+{u:'nano2',to:{f:.32,c:'#d6336c'},d:'Қарқынды қызғылт түс: нитрозофенол → индофенол.',r:'3-3'},
+{u:'naoh',to:{f:.45,c:'#17806f',ice:0},d:'Сілті қосқанда көкшіл-жасыл түс пайда болды.',r:'3-4'}]}]},
+{n:'№29.1',t:'Фенолдар + FeCl₃',p:'Төрт пробиркаға 1 мл-ден фенол, пирокатехин, резорцин, гидрохинон құй. Әрқайсысына 3–4 тамшы FeCl₃ қос, араластыр.',X:['s0','s1','s2','s3','fecl3','rod'],T:[1,2,3,4].map(i=>({n:i+'-пробирка',S:[
+{u:SOL,m:0,to:{f:.35,c:W},d:'Ерітінді құйылды (түссіз).'},
+{u:'fecl3',to:t=>({f:.4,c:FE[t.sub]}),d:t=>OB4[t.sub],r:t=>t.sub=='s0'?'4-1':null,a:t=>t.sub=='s3'?{ms:3500,to:{c:'#e3c21c'},d:'Гидрохинонның жасыл түсі сарыға ауысты: гидрохинон хинонға дейін тотығады.',r:'4-2'}:null}]}))},
+{n:'№29.2',t:'Фенолдардың ауада тотығуы',k:'paper',p:'Қағаз дақтарына фенолдардың ерітіндісін тамыз, содан соң әр дақ ортасына 2М NaOH тамыз.',X:['s1','s2','s3','s4','naoh2'],T:sp4([
+{u:SOL4,m:0,to:{s:1,c:'#eef3ee',r:'#d8ded8'},d:'Қағазға ерітінді тамды – түссіз дақ.',r:'5-0'},
+{u:'naoh2',m:0,to:t=>C5[t.sub],d:t=>OB5[t.sub],r:t=>t.sub=='s1'?'5-1':null,q:'Сілті ортада фенолдар оттегімен тез тотығады, қағаздың борпылдақ құрылымы O₂-нің өтуін жеңілдетеді.'}])},
+{n:'№30',t:'Көпатомды фенолдардың тотығуы (AgNO₃)',k:'glass',p:'Заттық шыныға фенолдарды тамызып, әрқайсысына 1% AgNO₃ қос. Реакция жылдамдығын салыстыр.',X:['s1','s2','s3','s4','agno3'],T:sp4([
+{u:SOL4,m:0,to:{s:1,c:'#eef3ee',r:'#d8ded8'},d:'Заттық шыныда мөлдір тамшы.',r:'6-0'},
+{u:'agno3',m:0,to:t=>C6[t.sub],d:t=>OB6[t.sub],r:t=>t.sub=='s3'?'6-1':null,q:'Көпатомды фенолдар күмісті тотықсыздандырады – осы қасиеті бойынша фотосурет проявителі ретінде қолданылады.'}])}];
+
+const $=id=>document.getElementById(id),V3=THREE.Vector3,C3=c=>new THREE.Color(c);
+let cn,cur,st,busy,done=[],fin=0,dyn,tube3=[],bot3=[],anims=[],yaw=0,hot=-1,drag=null,orb=null,D0=12,DZ=12,CY=3.6;
+const cv=$('cv'),wrap=$('wrap'),rn=new THREE.WebGLRenderer({canvas:cv,antialias:true}),sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(40,1,.1,100),ray=new THREE.Raycaster(),ms=new THREE.Vector2(),PL=new THREE.Plane(new V3(0,1,0),-2.4),clk=new THREE.Clock();
+rn.setPixelRatio(Math.min(devicePixelRatio,2));rn.shadowMap.enabled=true;sc.background=C3(0xcfdde2);
+sc.add(new THREE.HemisphereLight(0xffffff,0x8899aa,.95));const dl=new THREE.DirectionalLight(0xfff0cc,.9);dl.position.set(4,9,7);dl.castShadow=true;sc.add(dl);
+const gm=()=>new THREE.MeshStandardMaterial({color:0xcfe9f5,transparent:true,opacity:.3,roughness:.05,side:THREE.DoubleSide,depthWrite:false}),lm=c=>new THREE.MeshStandardMaterial({color:c,transparent:true,opacity:.92,roughness:.25}),
+cy=(r1,r2,h,m,o)=>{const g=new THREE.CylinderGeometry(r1,r2,h,28,1,!!o);const x=new THREE.Mesh(g,m);return x};
+(()=>{const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');x.fillStyle='#eaf2f4';x.fillRect(0,0,256,256);x.strokeStyle='#b9c8ce';x.lineWidth=4;x.strokeRect(0,0,256,128);x.strokeRect(0,128,256,128);
+const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(8,3);const w=new THREE.Mesh(new THREE.PlaneGeometry(30,10),new THREE.MeshStandardMaterial({map:t}));w.position.set(0,4,-3);sc.add(w);
+const b=new THREE.Mesh(new THREE.BoxGeometry(22,.5,10),new THREE.MeshStandardMaterial({color:0x22313a,roughness:.35,metalness:.2}));b.position.set(0,-.35,2);b.receiveShadow=true;sc.add(b);
+const f=new THREE.Mesh(new THREE.BoxGeometry(30,.1,12),new THREE.MeshStandardMaterial({color:0x8fa3ab}));f.position.set(0,-.65,2);sc.add(f);
+const sh=new THREE.Mesh(new THREE.BoxGeometry(9,.15,.7),new THREE.MeshStandardMaterial({color:0x9b7249}));sh.position.set(-3,4.6,-2.6);sc.add(sh);
+[0xe8890c,0x7a1fa2,0x2f9e55,0xd9a21b].forEach((k,i)=>{const fl=cy(.08,.5,1,gm());fl.position.set(-6+i*1.6,5.2,-2.6);sc.add(fl);const l=cy(.2,.46,.5,lm(k));l.position.set(-6+i*1.6,5,-2.6);sc.add(l)});
+const wn=new THREE.Mesh(new THREE.PlaneGeometry(2.6,3.2),new THREE.MeshBasicMaterial({color:0xfff4c8}));wn.position.set(6,5,-2.9);sc.add(wn)})();
+const bot3d=id=>{const [n,f,c,t]=RG[id],g=new THREE.Group();g.userData.id=id;
+if(t=='rod'){const r=cy(.06,.06,2.6,gm());r.material.opacity=.6;g.add(r)}
+else if(t=='ice'){g.add(cy(.45,.4,.9,gm(),1));for(let i=0;i<4;i++){const q=new THREE.Mesh(new THREE.BoxGeometry(.3,.3,.3),new THREE.MeshStandardMaterial({color:0xcdeeff,transparent:true,opacity:.8}));q.position.set((i%2-.5)*.3,-.1+(i>>1)*.3,(i%3-1)*.1);q.rotation.y=i;g.add(q)}}
+else{g.add(cy(.4,.4,1,gm()));const l=cy(.36,.36,.62,lm(c));l.position.y=-.15;g.add(l);const s=cy(.14,.4,.25,gm());s.position.y=.62;g.add(s);const cp=cy(.16,.16,.22,new THREE.MeshStandardMaterial({color:0x222}));cp.position.y=.92;g.add(cp);const bu=new THREE.Mesh(new THREE.SphereGeometry(.17,16,12),new THREE.MeshStandardMaterial({color:0x2a2a30}));bu.scale.y=1.4;bu.position.y=1.15;g.add(bu);
+const k=document.createElement('canvas');k.width=128;k.height=96;const x=k.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,128,96);x.fillStyle='#111';x.font='bold 24px sans-serif';x.textAlign='center';x.fillText(f,64,56);
+const lb=new THREE.Mesh(new THREE.PlaneGeometry(.62,.46),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(k)}));lb.position.set(0,-.05,.405);g.add(lb)}
+g.traverse(o=>o.castShadow=true);return g};
+function build(n){cn=n;cur=E[n];busy=0;done=[];fin=0;anims.length=0;drag=null;hot=-1;yaw=0;$('fin').style.display='none';if(dyn)sc.remove(dyn);dyn=new THREE.Group();sc.add(dyn);$('lbs').innerHTML='';
+document.querySelectorAll('#tabs button').forEach((b,i)=>b.classList.toggle('on',i==n));st=cur.T.map(()=>({f:0,c:W,pa:0,tb:0,k:0}));const N=cur.T.length;tube3=[];bot3=[];CY=cur.k?6.2:3.6;
+const lab=(cls,t)=>{const d=document.createElement('div');d.className=cls;d.textContent=t;$('lbs').appendChild(d);return d};
+if(!cur.k){const rk=new THREE.Mesh(new THREE.BoxGeometry(N*1.7+.6,.2,1.3),new THREE.MeshStandardMaterial({color:0x8a5a33,roughness:.6}));rk.position.y=-.1;rk.receiveShadow=true;dyn.add(rk)}
+cur.T.forEach((T,i)=>{const g=new THREE.Group();g.position.set((i-(N-1)/2)*1.7,0,0);dyn.add(g);const lb=lab('lb','');let o;
+if(cur.k){const pl=cur.k=='paper'?new THREE.Mesh(new THREE.BoxGeometry(1.5,.04,1.5),new THREE.MeshStandardMaterial({color:0xf4f0e4})):cy(.85,.85,.05,gm());pl.position.y=.03;g.add(pl);
+const mk=(r,y)=>{const m=new THREE.Mesh(new THREE.CircleGeometry(r,40),new THREE.MeshStandardMaterial({color:0xcccccc,side:2}));m.rotation.x=-Math.PI/2;m.position.y=y;g.add(m);return m};o={g,sp:1,sc:0,rng:mk(.6,.07),inn:mk(.38,.08),lb,y:1}}
+else{const gl=new THREE.Mesh(new THREE.CylinderGeometry(.4,.4,3,28,1,true),gm());gl.position.y=1.9;const bt=new THREE.Mesh(new THREE.SphereGeometry(.4,28,14,0,6.283,1.5708,1.5708),gm());bt.position.y=.4;g.add(gl,bt);
+const lq=lm(W),liq=cy(.34,.34,1,lq);liq.geometry.translate(0,.5,0);liq.position.y=.4;const sph=new THREE.Mesh(new THREE.SphereGeometry(.34,24,12,0,6.283,1.5708,1.5708),lq);sph.position.y=.4;
+const ly=cy(.345,.345,1,lm(0xffffff));ly.geometry.translate(0,.5,0);ly.visible=false;const pm=new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:0}),pg=new THREE.Group();
+for(let j=0;j<22;j++){const q=new THREE.Mesh(new THREE.SphereGeometry(.05+(j%3)*.025,8,8),pm);q.position.set(Math.cos(j*2.4)*.22*((j%4+1)/4),.12+(j%5)*.05,Math.sin(j*2.4)*.22*((j%3+1)/3));pg.add(q)}
+const ice=cy(.6,.55,1.4,new THREE.MeshStandardMaterial({color:0xbfe6ff,transparent:true,opacity:0,roughness:.1}));ice.position.y=.75;ice.visible=false;g.add(liq,sph,ly,pg,ice);
+o={g,glass:gl,gm:gl.material,liq,sph,lay:ly,pg,pm,ice,f:0,pa:0,ly:0,ic:0,sw:0,lb,y:3.95}}
+tube3.push(o);hUp(i)});
+const ids=cur.X,M=ids.length;ids.forEach((id,j)=>{const g=bot3d(id),home=new V3((j-(M-1)/2)*1.35,id=='rod'?1.2:.4,3);g.position.copy(home);dyn.add(g);bot3.push({g,id,home,lb:lab('bl',RG[id][0])})});
+$('pr').innerHTML=`<b>Тәжірибе ${cur.n}. ${cur.t}</b><br>${cur.p}`;say('👆 Реагент бөтелкесін ұстап, пробиркаға апарып жіберіңіз.');rs()}
+function rs(){const w=wrap.clientWidth,h=wrap.clientHeight;rn.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();const need=Math.max(cur?cur.T.length*1.7+1.6:6,(cur?cur.X.length:6)*1.4+1);D0=Math.max(9,need/2/(Math.tan(20*Math.PI/180)*cam.aspect))}
+addEventListener('resize',rs);
+const tw=(d,f)=>new Promise(r=>anims.push({t:0,d,f,r})),mvTo=(o,p,rz,d=.45)=>{const p0=o.position.clone(),z0=o.rotation.z;return tw(d,k=>{const e=k*k*(3-2*k);o.position.lerpVectors(p0,p,e);o.rotation.z=z0+(rz-z0)*e})};
+function hint(i){const t=st[i],g=cur.T[i].S[t.k];return !g?'✅ дайын':t.pend?'🥄 араластыр':'келесі: '+(Array.isArray(g.u)?'ерітінді':RG[g.u][0])}
+function hUp(i){tube3[i].lb.textContent=cur.T[i].n+' · '+hint(i)}
+function say(h){$('log').innerHTML=h}
+function obs(d,r,q){say(`<b>Бақылау:</b> ${d}`+(r?`<div class="sch">${scheme(R[r])}</div>`:'')+(q?`<p>💡 ${q}</p>`:''))}
+function showFin(){const u=[...new Set(done)];$('fin').style.display='block';$('fin').innerHTML='<b>🔬 Соңғы реакция</b>'+u.map(r=>`<div class="sch">${scheme(R[r])}</div>`).join('')}
+function chk(){if(!fin&&st.every((t,j)=>t.k>=cur.T[j].S.length)){fin=1;setTimeout(showFin,2200)}}
+function finish(i){const t=st[i],sg=cur.T[i].S[t.k];Object.assign(t,V(sg.to,t),{lay:0,pend:0});t.k++;hUp(i);const r=V(sg.r,t);obs(V(sg.d,t),r,sg.q);if(r)done.push(r);
+const a=sg.a&&sg.a(t);if(a)setTimeout(()=>{Object.assign(st[i],a.to);obs(a.d,a.r);if(a.r)done.push(a.r);if(fin)showFin()},a.ms);chk()}
+async function pour(i,d){const t=st[i],S=cur.T[i].S,sg=S[t.k],T=tube3[i],X=T.g.position.x,id=d.id,rg=RG[id],b=d.g;
+if(id=='rod'){if(!t.pend){say('Араластыратын ештеңе жоқ. Алдымен реагент құйыңыз.');return}
+await mvTo(b,new V3(X,3.8,0),0);await mvTo(b,new V3(X,2.5,0),0,.5);T.sw=1;await tw(2.2,k=>{b.position.x=X+Math.cos(k*34)*.13;b.position.z=Math.sin(k*34)*.13});T.sw=0;await mvTo(b,new V3(X,3.8,0),0);finish(i);return}
+if(t.pend){say('Алдымен шыны таяқшамен араластырыңыз 🥄');return}
+if(!sg){say('Бұл пробирка/дақ дайын ✅');return}
+if(!(Array.isArray(sg.u)?sg.u.includes(id):sg.u===id)){await tw(.5,k=>{T.g.position.x=X+Math.sin(k*40)*.1*(1-k)});T.g.position.x=X;say(`❌ Бұл кезеңде «${rg[0]}» қажет емес. ${hint(i)}`);return}
+await mvTo(b,new V3(X+1.1,cur.k?3.2:4.2,0),2,.55);
+if(rg[3]!='ice'){const y1=cur.k?.15:.4+T.f*3;for(let j=0;j<9;j++){const m=new THREE.Mesh(new THREE.SphereGeometry(.06,10,10),new THREE.MeshStandardMaterial({color:rg[2]||'#ddd'}));m.position.set(X,cur.k?2.7:3.7,0);dyn.add(m);tw(.5,k=>{m.position.y=(cur.k?2.7:3.7)*(1-k*k)+y1*k*k}).then(()=>dyn.remove(m));await sleep(170)}await sleep(500)}else await sleep(900);
+if(Array.isArray(sg.u))t.sub=id;
+if(sg.m===0)finish(i);else{t.f=V(sg.to,t).f;t.lay=rg[2];t.pend=1;hUp(i);say('Реагент қосылды, бірақ ерітінділер әлі араласпады (түстің қабаты көрінеді). 🥄 Шыны таяқшаны пробиркаға апарып араластырыңыз.')}}
+const ndc=e=>{const r=cv.getBoundingClientRect();ms.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(ms,cam)};
+cv.addEventListener('pointerdown',e=>{if(busy)return;ndc(e);cv.setPointerCapture(e.pointerId);const h=ray.intersectObjects(bot3.map(b=>b.g),true)[0];
+if(h){let o=h.object;while(!o.userData.id)o=o.parent;drag=bot3.find(b=>b.g===o)}else orb=e.clientX});
+cv.addEventListener('pointermove',e=>{if(drag){ndc(e);const p=new V3();if(ray.ray.intersectPlane(PL,p)){const g=drag.g;g.position.set(p.x,2.4,Math.max(-.5,Math.min(4,p.z)));hot=-1;tube3.forEach((o,i)=>{if(Math.abs(p.x-o.g.position.x)<.85&&Math.abs(p.z)<1.5)hot=i});g.rotation.z=drag.id=='rod'?0:hot>=0?.9:.15}}
+else if(orb!=null){yaw=Math.max(-.7,Math.min(.7,yaw+(e.clientX-orb)*.006));orb=e.clientX}});
+cv.addEventListener('pointerup',async()=>{orb=null;if(!drag)return;const d=drag;drag=null;busy=1;try{if(hot>=0)await pour(hot,d);await mvTo(d.g,d.home,0,.5)}finally{hot=-1;busy=0}});
+const prj=(o,p,y)=>{const v=new V3(p.x,p.y+y,p.z).project(cam);o.style.left=(v.x*.5+.5)*wrap.clientWidth+'px';o.style.top=(-v.y*.5+.5)*wrap.clientHeight+'px'};
+function loop(){requestAnimationFrame(loop);const dt=Math.min(clk.getDelta(),.05);if(!cur)return;
+for(let j=anims.length-1;j>=0;j--){const a=anims[j];a.t+=dt;const k=Math.min(a.t/a.d,1);a.f(k);if(k>=1){anims.splice(j,1);a.r()}}
+tube3.forEach((o,i)=>{const s=st[i];prj(o.lb,o.g.position,o.y);
+if(o.sp){o.sc+=((s.s?1:0)-o.sc)*.07;o.inn.scale.setScalar(Math.max(.001,o.sc));o.rng.scale.setScalar(Math.max(.001,o.sc));o.inn.material.color.lerp(C3(s.c||'#fff'),.08);o.rng.material.color.lerp(C3(s.r||'#ccc'),.08);return}
+o.f+=(s.f-o.f)*.05;const h=o.f*3;o.liq.scale.y=Math.max(.001,h);o.liq.visible=o.sph.visible=o.f>.01;o.liq.material.color.lerp(C3(s.c).lerp(C3('#ffffff'),s.tb*.75),.06);
+o.ly+=((s.lay?.85:0)-o.ly)*.08;o.lay.visible=o.ly>.02;o.lay.material.opacity=o.ly;o.lay.material.color.set(s.lay||'#fff');o.lay.scale.y=Math.max(.001,Math.min(h,.7));o.lay.position.y=.4+h-Math.min(h,.7);
+o.pa+=((s.pa||0)-o.pa)*.035;o.pm.color.set(s.pc||'#fff');o.pm.opacity=Math.min(1,o.pa*1.3);o.pg.visible=o.pa>.02;o.pg.position.y=(1-Math.min(1,o.pa))*2;
+if(o.sw){o.pg.rotation.y+=.25;o.liq.rotation.y+=.25}o.ic+=((s.ice?1:0)-o.ic)*.06;o.ice.visible=o.ic>.02;o.ice.material.opacity=o.ic*.55;o.gm.emissive.setHex(hot===i?0x13897c:0)});
+bot3.forEach(b=>prj(b.lb,b.g.position,b.id=='rod'?-1.5:-.85));
+DZ+=((fin?D0*.8:D0)-DZ)*.04;const y=yaw+(fin?Math.sin(clk.elapsedTime*.5)*.35:0);cam.position.set(Math.sin(y)*DZ,CY,Math.cos(y)*DZ+1);cam.lookAt(0,cur.k?0:1.4,1);rn.render(sc,cam)}
+$('tabs').innerHTML=E.map((e,i)=>`<button onclick="build(${i})">${e.n}</button>`).join('');build(0);DZ=D0;loop();
+</script></body></html>
