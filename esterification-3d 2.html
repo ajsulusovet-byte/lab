@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>3D виртуалды зертхана: этерификация</title>
+<style>
+:root{--bg:#0e1f23;--pn:#14292e;--ln:#2a474d;--tx:#e7f2f0;--mu:#93b0ad;--ac:#ffb020;--ok:#69db7c;--bad:#ff8787}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+#cv{flex:1;min-height:0;position:relative;touch-action:none}
+#cv canvas{display:block;width:100%;height:100%}
+#hud{position:absolute;left:10px;top:10px;background:rgba(14,31,35,.82);border:1px solid var(--ln);border-radius:10px;padding:8px 12px;pointer-events:none}
+#hud b{font-size:1.5rem;color:var(--ac)}
+#hud small{display:block;color:var(--mu)}
+#tabs{position:absolute;right:10px;top:10px;display:flex;flex-direction:column;gap:6px;z-index:2}
+#tabs button{flex:none;min-width:0;padding:8px 12px;background:rgba(14,31,35,.9);font-size:.85rem}
+#pn{background:var(--pn);border-top:2px solid var(--ln);padding:10px 12px;max-height:46vh;overflow-y:auto}
+.row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+button{flex:1;min-width:30%;padding:10px 6px;border:2px solid var(--ln);background:var(--bg);color:var(--tx);border-radius:10px;font:inherit;font-weight:600;cursor:pointer}
+button.on{border-color:var(--ac);background:var(--ac);color:#10201f}
+button.main{border-color:var(--ok);color:var(--ok)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+label{display:block;color:var(--mu);margin:4px 0 2px}
+input[type=range]{width:100%;accent-color:var(--ac)}
+#msg{margin:6px 0;padding:8px 10px;border-radius:8px;background:var(--bg);border-left:5px solid var(--mu)}
+#msg.w{border-color:var(--bad)}#msg.g{border-color:var(--ok)}
+.eq{color:var(--ac);font-size:.9rem;margin:4px 0}
+table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:6px}
+th,td{border-bottom:1px solid var(--ln);padding:4px 3px;text-align:left}
+th{color:var(--mu);font-weight:600}
+#res{display:none;margin-top:8px;padding:10px;background:var(--bg);border-radius:8px;border-left:5px solid var(--ok)}
+.hide{display:none}
+</style>
+</head>
+<body>
+<div id="cv"><div id="hud"><b id="T">22 °C</b><small id="h1"></small><small id="h2"></small></div><div id="tabs"><button id="eA" class="on">Этилацетат</button><button id="eB">Изоамилацетат</button></div></div>
+<div id="pn">
+
+<div class="eq" id="eq"></div>
+<button id="main" class="main" style="width:100%;margin-bottom:8px"></button>
+<div id="ctl" class="hide">
+<label for="pw">Қыздыру қуаты: <span id="pwv">0</span> %</label>
+<input id="pw" type="range" min="0" max="100" value="0">
+<div id="dpw"><label for="dp">Тамшылату жылдамдығы: <span id="dpv">0</span> %</label>
+<input id="dp" type="range" min="0" max="100" value="0"></div>
+<div class="row" style="margin-top:8px"><button id="wt">Су: ашық</button><button id="rx" class="hide">Қабылдағышты ауыстыр</button><button id="end" disabled>Реакцияны аяқта</button></div>
+</div>
+<div class="row"><button id="sp">Жылдамдық: ×1</button><button id="rs">Қайта бастау</button></div>
+<div id="msg"></div>
+<div id="res"></div>
+<table><thead><tr><th>Зат</th><th>Формула</th><th>M, г/моль</th><th>t қайн, °C</th><th>ρ, г/см³</th></tr></thead>
+<tbody><tr><td>Этилацетат</td><td>CH₃COOC₂H₅</td><td>88,11</td><td>77,2</td><td>0,90</td></tr>
+<tr><td>Изоамилацетат</td><td>CH₃COOC₅H₁₁</td><td>130,18</td><td>142</td><td>0,8719</td></tr></tbody></table>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+var STEPS={A:["Колбаға 2,5 мл этил спиртін құй","Суыта отырып 2,5 мл конц. күкірт қышқылын құй","Тоңазытқышқа суды аш","Тамшылы воронкаға 22,5 мл спирт пен 20 мл сірке қышқылы қоспасын құй","RUN","Na₂CO₃ ерітіндісімен жу: лакмус қызаруы тоқталғанша","Қаныққан CaCl₂ ерітіндісімен жу (8 г CaCl₂ + 8 мл H₂O)","Сусыз Na₂SO₄-пен құрғат","Дефлегматормен 75–78 °C фракцияны айда"],
+B:["Колбаға 26 мл изоамил спирті мен 17 мл мұзды сірке қышқылын құй","0,5 мл конц. H₂SO₄ мен қайнағыш сал","Қайтымды тоңазытқышқа суды аш","RUN","Бөлетін воронкада сумен 2 рет жу","5 %-ті сода ерітіндісімен жу","Қайтадан сумен жу","Сусыз Na₂SO₄ құрғат","Вюрц колбасынан 138–140 °C фракцияны айда"]};
+var RUNI={A:4,B:3};
+var WHY={A:{1:"Суыту қажет: қышқыл қосқанда жылу бөлінеді. H₂SO₄ катализатор.",3:"Қоспаны моншаның температурасы 140 °C жеткен соң бірте-бірте құяды.",5:"Көк лакмус қызаруы тоқтағанда қышқыл толық жуылған."},B:{1:"Қайнағыш біркелкі қайнауды қамтамасыз етеді.",2:"Су қақпанда жиналады, сондықтан тепе-теңдік эфир түзілуіне қарай ығысады.",5:"Сода қалған қышқылды бейтараптайды."}};
+var EQ={A:"CH₃COOH + C₂H₅OH ⇄ CH₃COOC₂H₅ + H₂O (H₂SO₄)",B:"CH₃COOH + (CH₃)₂CHCH₂CH₂OH ⇄ CH₃COOC₅H₁₁ + H₂O (H₂SO₄)"};
+var E="A",S;
+function init(){var sp=S?S.spd:1;S={s:0,pw:0,dp:0,Tb:22,Tf:22,dripped:0,P:0,X:0,W:0,loss:0,oh:0,Fv:0,water:false,dist:false,boil:false,spd:sp,done:false,Td:22,Tv:22,V2:0,Vm:0,rx:0,good:0,bad:0,fore:0,resid:0}}
+init();
+function cl(v,a,b){return Math.max(a,Math.min(b,v))}
+var PMAX=36,FUN=42.5,FORE=6;
+
+/* ---------- 3D scene ---------- */
+var box=document.getElementById("cv");
+var R=new THREE.WebGLRenderer({antialias:true});R.localClippingEnabled=true;R.setPixelRatio(Math.min(devicePixelRatio,2));box.appendChild(R.domElement);
+var sc=new THREE.Scene();sc.background=new THREE.Color(0x0e1f23);
+var cam=new THREE.PerspectiveCamera(45,1,.1,100);
+sc.add(new THREE.HemisphereLight(0xdff6ff,0x223038,.9));
+var dl=new THREE.DirectionalLight(0xffffff,.8);dl.position.set(4,9,6);sc.add(dl);
+function M(c,o){return new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.5,metalness:.1},o||{}))}
+var glass=M(0xcfeeff,{transparent:true,opacity:.22,roughness:.05,side:THREE.DoubleSide,depthWrite:false});
+var steel=M(0x8a979a,{metalness:.7,roughness:.35});
+function V3(x,y,z){return new THREE.Vector3(x,y,z)}
+function add(m,x,y,z,g){m.position.set(x,y,z);(g||sc).add(m);return m}
+function cyl(rt,rb,h,mat,x,y,z,g){return add(new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,24),mat),x,y,z,g)}
+function ball(r,mat,x,y,z,g){return add(new THREE.Mesh(new THREE.SphereGeometry(r,32,24),mat),x,y,z,g)}
+function seg(a,b,r,mat,g){var d=V3(b.x-a.x,b.y-a.y,b.z-a.z);var m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,d.length(),20),mat);m.position.set((a.x+b.x)/2,(a.y+b.y)/2,(a.z+b.z)/2);m.quaternion.setFromUnitVectors(V3(0,1,0),d.normalize());(g||sc).add(m);return m}
+function liqMat(c,pl){return new THREE.MeshStandardMaterial({color:c,transparent:true,opacity:.85,clippingPlanes:[pl],side:THREE.DoubleSide})}
+function Pl(){return new THREE.Plane(V3(0,-1,0),0)}
+var gA=new THREE.Group(),gB=new THREE.Group(),gC=new THREE.Group(),gD=new THREE.Group();sc.add(gA,gB,gC,gD);
+add(new THREE.Mesh(new THREE.BoxGeometry(14,.4,5),M(0x3a4a4f)),.2,-.2,0);
+[-5.5,1.6].forEach(function(x){add(new THREE.Mesh(new THREE.BoxGeometry(1,.15,1),steel),x,.07,-.9);cyl(.07,.07,5.6,steel,x,2.8,-.9)});
+/* --- A: ethyl acetate (Würtz flask, glycerol bath, dropping funnel, Liebig) --- */
+var hA=cyl(1.5,1.6,.3,M(0x222222,{emissive:0x000000}),-3.6,.15,0,gA);
+cyl(1.4,1.4,.9,M(0xd9a441,{transparent:true,opacity:.35,depthWrite:false}),-3.6,.75,0,gA);
+ball(.9,glass,-3.6,1.75,0,gA);cyl(.28,.28,1.3,glass,-3.6,3.0,0,gA);
+seg(V3(-3.6,3.1,0),V3(-2.0,3.1,0),.12,glass,gA);
+seg(V3(-5.5,3.4,-.9),V3(-3.9,3.4,-.2),.06,steel,gA);seg(V3(1.6,2.3,-.9),V3(1.2,2.3,-.2),.06,steel,gA);
+var plA=Pl(),plF=Pl();
+var lqA=ball(.86,liqMat(0xe9d8a6,plA),-3.6,1.75,0,gA);
+cyl(.6,.1,1.3,glass,-3.6,4.3,0,gA);
+var lqF=add(new THREE.Mesh(new THREE.CylinderGeometry(.55,.09,1.2,24),liqMat(0xdfe8c0,plF)),-3.6,4.3,0,gA);
+cyl(.06,.06,2.6,M(0xffffff,{transparent:true,opacity:.7}),-2.4,1.9,.6,gA);
+var merc=cyl(.03,.03,1,M(0xd62828),-2.4,1,.6,gA);
+var cA=V3(-2.0,3.1,0),cB=V3(2.9,2.3,0);
+seg(cA,cB,.12,glass,gA);
+var jA=seg(V3(-1.6,3.03,0),V3(2.5,2.37,0),.4,new THREE.MeshStandardMaterial({color:0xcfeeff,transparent:true,opacity:.07,depthWrite:false}),gA);
+var vA=seg(cA,cB,.09,new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:0,depthWrite:false}),gA);
+seg(V3(2.9,2.3,0),V3(3.8,2.1,0),.14,glass,gA);seg(V3(3.8,2.1,0),V3(3.9,1.9,0),.07,glass,gA);
+cyl(.34,.34,1.9,glass,3.9,.95,0,gA);
+var recL=cyl(.31,.31,1,M(0xfff0b0,{transparent:true,opacity:.9}),3.9,.1,0,gA);
+var dropA=ball(.06,M(0xffc233),3.9,1.8,0,gA);
+/* --- B: isoamyl acetate (flask, Dean-Stark trap, reflux condenser) --- */
+var hB=cyl(1.2,1.3,.3,M(0x222222,{emissive:0x000000}),-1.5,.15,0,gB);
+ball(.9,glass,-1.5,1.35,0,gB);cyl(.28,.28,1,glass,-1.5,2.7,0,gB);
+var plB=Pl();var lqB=ball(.86,liqMat(0xe9d8a6,plB),-1.5,1.35,0,gB);
+cyl(.28,.28,1.2,glass,-1.5,3.8,0,gB);cyl(.17,.17,1.3,glass,-.75,3.65,0,gB);
+seg(V3(-1.5,4.2,0),V3(-.75,4.2,0),.08,glass,gB);seg(V3(-.75,3.3,0),V3(-1.5,3.3,0),.08,glass,gB);
+var wtr=cyl(.14,.14,1,M(0x4cc9f0,{transparent:true,opacity:.9}),-.75,3.0,0,gB);
+cyl(.12,.12,1.7,glass,-1.5,5.25,0,gB);
+var jB=cyl(.4,.4,1.5,new THREE.MeshStandardMaterial({color:0xcfeeff,transparent:true,opacity:.07,depthWrite:false}),-1.5,5.25,0,gB);
+var vB=cyl(.09,.09,1.6,new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:0,depthWrite:false}),-1.5,5.2,0,gB);
+seg(V3(-5.5,2.9,-.9),V3(-1.8,2.9,-.2),.06,steel,gB);
+var dropB=ball(.05,M(0x4cc9f0),-1.5,4.3,0,gB);
+/* --- D: final distillation of isoamyl acetate (138-140 C) --- */
+var hD=cyl(1.2,1.3,.3,M(0x222222,{emissive:0x000000}),-3.6,.15,0,gD);
+ball(.9,glass,-3.6,1.2,0,gD);cyl(.28,.28,1.3,glass,-3.6,2.65,0,gD);
+var plD=Pl();var lqD=ball(.86,liqMat(0xe9d8a6,plD),-3.6,1.2,0,gD);
+seg(V3(-3.6,3.0,0),V3(-2.0,3.0,0),.12,glass,gD);
+seg(V3(-5.5,2.5,-.9),V3(-3.9,2.5,-.2),.06,steel,gD);seg(V3(1.6,2.3,-.9),V3(1.2,2.3,-.2),.06,steel,gD);
+cyl(.06,.06,2.4,M(0xffffff,{transparent:true,opacity:.7}),-3.6,3.9,0,gD);
+var mercD=cyl(.03,.03,1,M(0xd62828),-3.6,3.5,0,gD);ball(.08,M(0xd62828),-3.6,3.0,0,gD);
+seg(V3(-2.0,3.0,0),V3(2.9,2.3,0),.12,glass,gD);
+var jD=seg(V3(-1.6,2.94,0),V3(2.5,2.36,0),.4,new THREE.MeshStandardMaterial({color:0xcfeeff,transparent:true,opacity:.07,depthWrite:false}),gD);
+var vD=seg(V3(-2.0,3.0,0),V3(2.9,2.3,0),.09,new THREE.MeshStandardMaterial({color:0xffffff,transparent:true,opacity:0,depthWrite:false}),gD);
+seg(V3(2.9,2.3,0),V3(4.9,2.1,0),.12,glass,gD);
+var tipD=cyl(.07,.07,.35,glass,3.9,2.02,0,gD);
+cyl(.3,.3,1.9,glass,3.9,.95,0,gD);cyl(.26,.26,1.9,glass,4.8,.95,0,gD);
+var recD=cyl(.27,.27,1,M(0xfff0b0,{transparent:true,opacity:.9}),3.9,.1,0,gD);
+var recW=cyl(.23,.23,1,M(0x9c6b2f,{transparent:true,opacity:.9}),4.8,.1,0,gD);
+var dropD=ball(.06,M(0xffc233),3.9,1.8,0,gD);
+/* bubbles */
+var bub=[];[[gA,-3.6,1.75],[gB,-1.5,1.35],[gD,-3.6,1.2]].forEach(function(c,k){for(var i=0;i<12;i++){var b=ball(.05,M(0xffffff,{transparent:true,opacity:.6}),c[1],c[2],0,c[0]);b.visible=false;b.userData={p:Math.random(),a:Math.random()*6.28,r:Math.random()*.5,k:k,x:c[1],y:c[2]};bub.push(b)}});
+/* --- C: separating funnel and product vial --- */
+var SX=5.9;
+cyl(.6,.6,1.6,glass,SX,2.7,0,gC);cyl(.6,.08,.5,glass,SX,1.65,0,gC);cyl(.05,.05,.7,steel,SX,1.05,0,gC);ball(.14,steel,SX,3.55,0,gC);
+var sAq=cyl(.56,.56,1,M(0x9fd8ee,{transparent:true,opacity:.8}),SX,1.9,0,gC);
+var sOr=cyl(.56,.56,1,M(0xfff0b0,{transparent:true,opacity:.85}),SX,1.9,0,gC);
+cyl(.36,.36,1,glass,SX,.5,0,gC);
+var vial=cyl(.32,.32,1,M(0xfff6cf,{transparent:true,opacity:.9}),SX,.05,0,gC);
+
+/* camera orbit */
+var az=.3,el=.3,dist=16,tgt=V3(.6,2.4,0),pts={};
+function setCam(){cam.position.set(tgt.x+dist*Math.cos(el)*Math.sin(az),tgt.y+dist*Math.sin(el),tgt.z+dist*Math.cos(el)*Math.cos(az));cam.lookAt(tgt)}
+function size(){var w=box.clientWidth,h=box.clientHeight;R.setSize(w,h);cam.aspect=w/h;if(w/h<1)dist=Math.max(dist,22);cam.updateProjectionMatrix();setCam()}
+addEventListener("resize",size);
+var cv=R.domElement;
+cv.addEventListener("pointerdown",function(e){cv.setPointerCapture(e.pointerId);pts[e.pointerId]={x:e.clientX,y:e.clientY}});
+cv.addEventListener("pointermove",function(e){var p=pts[e.pointerId];if(!p)return;var ids=Object.keys(pts);
+if(ids.length===1){az-=(e.clientX-p.x)*.007;el=cl(el+(e.clientY-p.y)*.006,.05,1.3)}
+else{var o=pts[ids.filter(function(k){return k!=e.pointerId})[0]];var d0=Math.hypot(p.x-o.x,p.y-o.y),d1=Math.hypot(e.clientX-o.x,e.clientY-o.y);dist=cl(dist*d0/Math.max(d1,1),7,32)}
+p.x=e.clientX;p.y=e.clientY;setCam()});
+function up(e){delete pts[e.pointerId]}
+cv.addEventListener("pointerup",up);cv.addEventListener("pointercancel",up);
+cv.addEventListener("wheel",function(e){e.preventDefault();dist=cl(dist*(1+e.deltaY*.001),7,32);setCam()},{passive:false});
+
+/* ---------- UI ---------- */
+var $=function(i){return document.getElementById(i)};
+function msg(t,c){$("msg").textContent=t;$("msg").className=c||""}
+function render(){
+var st=STEPS[E],ri=RUNI[E],s=S.s;
+$("eA").className=E=="A"?"on":"";$("eB").className=E=="B"?"on":"";$("eq").textContent=EQ[E];
+var d2=E=="B"&&s==8;
+$("main").classList.toggle("hide",s==ri||s>=st.length||d2);$("ctl").classList.toggle("hide",!(s==ri||d2));$("dpw").classList.toggle("hide",E=="B");$("rx").classList.toggle("hide",!d2);$("end").textContent=d2?"Айдауды аяқта":"Реакцияны аяқта";
+if(s!=ri&&s<st.length&&!d2)$("main").textContent=(s+1>ri?s:s+1)+". "+st[s];
+$("wt").textContent=S.water?"Су: ашық":"Су: жабық";$("wt").className=S.water?"on":""}
+$("main").onclick=function(){var s=S.s;if(s==2)S.water=true;S.s++;
+if(S.s>=STEPS[E].length)finish();else if(E=="B"&&S.s==8){startDist();msg("Қуатты 85 % қойыңыз. Термометр 138 °C көрсеткенде қабылдағышты ауыстырыңыз.","g")}else msg((WHY[E][s]||"Дұрыс."),"g");render()};
+$("pw").oninput=function(){S.pw=+this.value;$("pwv").textContent=S.pw};
+$("dp").oninput=function(){S.dp=+this.value;$("dpv").textContent=S.dp};
+$("wt").onclick=function(){S.water=!S.water;render()};
+$("end").onclick=function(){if(E=="B"&&S.s==8){S.s++;S.pw=0;$("pw").value=0;$("pwv").textContent=0;S.dist=false;S.boil=false;finish();render();return}S.s++;S.pw=0;S.dp=0;$("pw").value=0;$("dp").value=0;$("pwv").textContent=0;$("dpv").textContent=0;S.dist=false;S.boil=false;msg("Реакция аяқталды. Енді өнімді тазартыңыз.","g");render()};
+$("rx").onclick=function(){S.rx=Math.min(2,S.rx+1);msg(["","Қабылдағыш ауыстырылды: енді негізгі өнім жиналады.","Қабылдағыш ауыстырылды: соңғы фракция жиналады."][S.rx],"g")};
+$("sp").onclick=function(){S.spd=S.spd==1?3:S.spd==3?6:1;this.textContent="Жылдамдық: ×"+S.spd};
+function reset(){init();$("pw").value=0;$("dp").value=0;$("pwv").textContent=0;$("dpv").textContent=0;$("res").style.display="none";msg(E=="A"?"Этилацетатты синтездеу: қадамдарды ретімен орында.":"Изоамилацетатты синтездеу: су қақпаны арқылы тепе-теңдікті ығыстырамыз.");render()}
+$("rs").onclick=reset;
+$("eA").onclick=function(){E="A";reset()};$("eB").onclick=function(){E="B";reset()};
+
+/* ---------- simulation ---------- */
+function step(dt){
+if(E=="B"&&S.s==8)return stepD(dt);
+if(S.s!=RUNI[E])return;
+if(E=="A"){
+S.Tb+=((22+S.pw*1.6)-S.Tb)*.2*dt;
+var dr=cl((S.Tb-110)/40,0,1)*.8,dd=Math.min(S.dp/100*dt,FUN-S.dripped);S.dripped+=dd;
+var av=Math.max(PMAX*S.dripped/FUN-S.P,0),dp=(S.water&&S.Tb>=110)?Math.min(dr*dt,av):0;
+S.P+=dp;S.dist=dp>1e-4;S.boil=S.Tb>=110;
+if(S.Tb>140)S.oh+=(S.Tb-140)*dt*.004;
+$("end").disabled=S.P<3}
+else{
+S.Tf+=((22+S.pw*1.6)-S.Tf)*.2*dt;var cap=118+17*(S.X/.95);if(S.Tf>cap)S.Tf=cap;
+var r=cl((S.Tf-95)/25,0,1)*.05;S.boil=S.Tf>=100;
+if(S.water)S.X+=r*(1-S.X/.95)*dt;else S.loss+=r*dt*.2;
+if(S.pw>80)S.loss+=dt*.0015;
+S.loss=Math.min(S.loss,.5);S.W=S.X/.95*4.3;S.dist=S.boil&&S.water&&r>0;
+$("end").disabled=S.W<.3}}
+function tnD(v){var m=S.Vm;return v<FORE?118+20*v/FORE:v<FORE+m?138+2*(v-FORE)/m:140+10*Math.min(1,(v-FORE-m)/2)}
+function startDist(){var mc=31.2*cl(S.X*(1-S.loss)*.9,0,1);S.Vm=Math.max(mc/.8719,1);S.Td=25;S.Tv=25;S.V2=0;S.rx=0;S.good=0;S.bad=0;S.fore=0;S.resid=0}
+function stepD(dt){
+var Vt=FORE+S.Vm+2,tn=tnD(S.V2);
+S.Td+=((22+S.pw*1.6)-S.Td)*.08*dt;
+S.boil=S.Td>=tn&&S.V2<Vt;S.dist=false;
+if(S.boil&&S.water){var dv=Math.min((S.Td-tn)*.12*dt,Vt-S.V2);S.V2+=dv;S.Td-=dv*3;S.dist=dv>0;
+if(S.rx==1){if(tn>=137.5&&tn<=140.5)S.good+=dv;else S.bad+=dv}else if(S.rx==0)S.fore+=dv;else S.resid+=dv}
+S.Tv=Math.min(S.Td,tnD(S.V2));
+$("end").disabled=S.V2<1}
+function warnD(){var Vt=FORE+S.Vm+2,tn=tnD(S.V2);
+if(!S.water&&S.Td>60)return msg("Тоңазытқышқа су ашылмаған! Суды ашыңыз.","w");
+if(S.V2>=Vt-.01)return msg("Айдау аяқталды. «Айдауды аяқта» түймесін басыңыз.","g");
+if(S.pw<50)return msg("Колбаны қыздырыңыз: қуатты 85 % қойыңыз.");
+if(S.dist&&S.rx==0&&tn>=137)return msg("Термометр 138 °C-қа жетті! Қабылдағышты ауыстырыңыз.","w");
+if(S.dist&&S.rx==1&&(tn>140.5||S.V2>=FORE+S.Vm-.3))return msg("Негізгі фракция аяқталды. Қабылдағышты ауыстырыңыз.","w");
+if(S.rx==1&&S.bad>.3)return msg("Негізгі қабылдағышқа қоспа түсті: ауыстыру уақыты дұрыс болмады.","w");
+if(S.Td<tn)return msg("Колба қызып жатыр: "+S.Td.toFixed(0)+" °C.");
+return msg("Айдау жүріп жатыр: бу температурасы "+S.Tv.toFixed(0)+" °C.","g")}
+function warn(){
+var s=S.s,ri=RUNI[E];if(E=="B"&&s==8)return warnD();if(s!=ri)return;
+if(E=="A"){
+if(S.Tb>140)return msg("Монша 140 °C-тан асты: эфир (а) және SO₂ (б) түзіледі, өнім шығымы азаяды. Қуатты азайтыңыз.","w");
+if(S.Fv>66)return msg("Колба толып кетті (2/3-тен артық). Тамшылатуды азайтыңыз.","w");
+if(S.dripped>0&&S.Fv<3&&S.Tb>110)return msg("Колба құрғап барады. Тамшылатуды арттырыңыз: жылдамдық айдау жылдамдығына тең болуы керек.","w");
+if(!S.water&&S.Tb>70)return msg("Тоңазытқышқа су ашылмаған: булар конденсацияланбайды.","w");
+if(S.dripped>=FUN-.01&&S.P>=PMAX*.98)return msg("Айдау аяқталды. «Реакцияны аяқта» түймесін басыңыз.","g");
+if(S.pw==0)return msg("Алдымен моншаны 140 °C дейін қыздырыңыз (қуат ≈ 75 %).");
+if(S.Tb<110)return msg("Монша қызып жатыр: "+S.Tb.toFixed(0)+" °C.");
+if(S.dp==0)return msg("140 °C жетті. Қоспаны тамшылатып құя бастаңыз.");
+return msg("Айдау жүріп жатыр. Дистиллят: "+S.P.toFixed(1)+" мл.","g")}
+if(!S.water&&S.Tf>80)return msg("Қайтымды тоңазытқышқа су ашылмаған: буы шығып кетіп жатыр. Суды ашыңыз.","w");
+if(S.pw>80)return msg("Тым қатты қыздыру: булар тоңазытқышқа үлгермей шығып кетеді. Қуатты азайтыңыз.","w");
+if(S.W>=4.1)return msg("Қақпандағы су көбеймейді: реакция аяқталды. «Реакцияны аяқта» түймесін басыңыз.","g");
+if(S.pw==0)return msg("Қоспаны қайнағанша қыздырыңыз (қуат ≈ 50–70 %).");
+if(S.Tf<100)return msg("Колба қызып жатыр: "+S.Tf.toFixed(0)+" °C.");
+return msg("Қайнап жатыр. Қақпанда жиналған су: "+S.W.toFixed(2)+" мл.","g")}
+function finish(){
+var act,th,t,txt;
+if(E=="A"){th=.35*88.11;act=th*cl(.84*(S.P/PMAX)*(1-Math.min(.35,S.oh))*.93,0,1);
+txt="Реагенттер: этил спирті 0,37 моль, сірке қышқылы 0,35 моль. Артық алынғаны: этил спирті (0,02 моль). Шығым сірке қышқылы бойынша есептеледі.<br>Теориялық шығым: 0,35 × 88,11 = "+th.toFixed(1)+" г."}
+else{th=.24*130.18;act=S.good*.8719*.97;
+txt="Реагенттер: изоамил спирті 0,24 моль, сірке қышқылы 0,30 моль. Артық алынғаны: сірке қышқылы (0,06 моль). Шығым спирт бойынша есептеледі.<br>Теориялық шығым: 0,24 × 130,18 = "+th.toFixed(1)+" г.<br>Фракциялар: алғашқы "+S.fore.toFixed(1)+" мл, негізгі өнім (138–140 °C) "+S.good.toFixed(1)+" мл"+(S.bad>.5?", негізгі қабылдағышқа түскен қоспа "+S.bad.toFixed(1)+" мл (тазалығы төмен)":"")+"."}
+S.act=act;S.th=th;S.done=true;
+var p=act/th*100;
+$("res").innerHTML="<b>Нәтиже.</b> "+txt+"<br>Практикалық шығым: <b>"+act.toFixed(1)+" г</b>.<br>Өнім шығымы: <b>"+p.toFixed(0)+" %</b>. "+(p>=70?"Жақсы нәтиже.":p>=50?"Орташа. Қыздыруды бақылауды жақсартыңыз.":"Төмен. Қайталап көріңіз: температураны, тамшылатуды және реакция уақытын қадағалаңыз.");
+$("res").style.display="block";msg("Эксперимент аяқталды.","g")}
+function ui(){
+var d2=E=="B"&&S.s==8;
+$("T").textContent=(E=="A"?S.Tb:d2||S.s>8?S.Tv:S.Tf).toFixed(0)+" °C";
+$("h1").textContent=E=="A"?"Моншаның температурасы":d2||S.s>8?"Термометр (бу температурасы)":"Колбаның температурасы";
+$("h2").textContent=E=="A"?"Дистиллят: "+S.P.toFixed(1)+" мл":d2||S.s>8?"Негізгі өнім: "+S.good.toFixed(1)+" мл":"Қақпандағы су: "+S.W.toFixed(2)+" мл";
+$("rx").textContent="Қабылдағышты ауыстыр ("+(S.rx+1)+"/3)";
+warn()}
+
+/* ---------- render loop ---------- */
+var last=performance.now(),tmr=0;
+function frame(now){
+var dt=Math.min((now-last)/1000,.1)*S.spd;last=now;
+step(dt);
+if(now-tmr>200){tmr=now;ui()}
+var ri=RUNI[E],s=S.s,gl=S.pw/100;
+gA.visible=E=="A";gB.visible=E=="B"&&s<8;gD.visible=E=="B"&&s>=8;gC.visible=s>ri&&!(E=="B"&&s==8);
+hA.material.emissive.setRGB(gl*.9,gl*.25,0);hB.material.emissive.setRGB(gl*.9,gl*.25,0);
+if(E=="A"){
+S.Fv=s<ri?(s>=2?5:2.5):5+S.dripped-S.P*FUN/PMAX;
+lqA.visible=s>=1;lqA.material.color.setHex(s>=2?0xcfa65a:0xe9d8a6);
+plA.constant=1.75-.9+1.8*.6*cl(S.Fv/66,0,1.05)+.05;
+lqF.visible=s>=4&&s<=ri;var ff=cl((FUN-S.dripped)/FUN,0,1);plF.constant=3.7+1.2*ff;
+var h=.3+cl(S.Tb,0,200)/200*1.7;merc.scale.y=h;merc.position.y=.7+h/2;
+vA.material.opacity+=((S.dist?.55:S.boil&&S.water?.2:0)-vA.material.opacity)*.1;
+jA.material.opacity=S.water?.22:.07;jA.material.color.setHex(S.water?0x4cc9f0:0xcfeeff);
+var hh=S.P*.05;recL.visible=hh>.01;recL.scale.y=Math.max(hh,.01);recL.position.y=.1+hh/2;
+dropA.visible=S.dist;if(S.dist)dropA.position.y=1.75-((now/350)%1)*(1.75-.15-hh)}
+else{
+lqB.visible=s>=1;lqB.material.color.setHex(s>=2?0xcfa65a:0xe9d8a6);
+plB.constant=1.35-.9+1.8*.6*cl((43-S.W)/66,0,1)+.05;
+vB.material.opacity+=((S.dist?.5:S.boil&&S.water?.2:0)-vB.material.opacity)*.1;
+jB.material.opacity=S.water?.22:.07;jB.material.color.setHex(S.water?0x4cc9f0:0xcfeeff);
+var wh=cl(S.W/4.3,0,1)*1.0;wtr.visible=wh>.01;wtr.scale.y=Math.max(wh,.01);wtr.position.y=3.0+wh/2;
+dropB.visible=S.dist;if(S.dist)dropB.position.y=4.3-((now/400)%1)*(.7+(1-wh)*.4)}
+/* bubbles */
+var shake=0;
+bub.forEach(function(b){var u=b.userData,on=S.boil&&((u.k==0&&E=="A"&&s==ri)||(u.k==1&&E=="B"&&s==ri)||(u.k==2&&E=="B"&&s==8));
+if(on){b.visible=true;u.p=(u.p+dt*.5)%1;b.position.set(u.x+Math.cos(u.a)*u.r*.8,u.y-.6+u.p*1.1,Math.sin(u.a)*u.r*.8)}else b.visible=false});
+if(E=="B"&&s>=8){
+var Vt=FORE+S.Vm+2;
+plD.constant=1.2-.9+1.8*.6*cl((Vt-S.V2)/50,0,1.05)+.05;
+hD.material.emissive.setRGB(gl*.9,gl*.25,0);
+var hm=.1+cl(S.Tv,0,200)/200*1.8;mercD.scale.y=hm;mercD.position.y=3.0+hm/2;
+vD.material.opacity+=((S.dist?.55:S.boil&&S.water?.2:0)-vD.material.opacity)*.1;
+jD.material.opacity=S.water?.22:.07;jD.material.color.setHex(S.water?0x4cc9f0:0xcfeeff);
+var tx=S.rx==1?3.9:4.8,mh=(S.good+S.bad)*.05,wh=(S.fore+S.resid)*.05;
+tipD.position.set(tx,tx<4?2.02:1.94,0);
+recD.visible=mh>.01;recD.scale.y=Math.max(mh,.01);recD.position.y=.1+mh/2;
+recW.visible=wh>.01;recW.scale.y=Math.max(wh,.01);recW.position.y=.1+wh/2;
+dropD.visible=S.dist;if(S.dist){dropD.position.x=tx;var tp=tx<4?1.85:1.77,lv=.1+(tx<4?mh:wh);dropD.position.y=tp-((now/350)%1)*Math.max(tp-lv-.05,.1)}
+}
+/* separating funnel and vial */
+if(s>ri){
+var org=E=="A"?S.P*.035:S.X/.95*1.3,aq=(s>=ri+4)?0:(s>=ri+1?.4:0);
+sAq.visible=aq>0&&!S.done;sAq.scale.y=Math.max(aq,.01);sAq.position.y=1.9+aq/2;sOr.visible=!S.done;
+sOr.scale.y=Math.max(org,.01);sOr.position.y=1.9+aq+org/2;
+sOr.material.opacity=s>=ri+4?.95:.75}
+var vh=S.done?cl((S.act||0)/35,0,1)*.8:0;vial.visible=vh>.01;vial.scale.y=Math.max(vh,.01);vial.position.y=.05+vh/2;
+R.render(sc,cam);requestAnimationFrame(frame)}
+size();reset();ui();requestAnimationFrame(frame);
+</script>
+</body>
+</html>
