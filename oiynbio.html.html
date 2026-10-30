@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Биология: 5 ойын</title>
+<style>
+:root{--bg:#f1f5ee;--card:#fff;--ink:#1d2b1f;--mut:#5f7263;--acc:#3a7d44;--ok:#2e8b57;--bad:#c0392b;--line:#cfdccb;--soft:#dcecd6;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121b14;--card:#1b281e;--ink:#e8f1e6;--mut:#a3b8a6;--acc:#7cc98a;--ok:#62d08f;--bad:#ff7b6b;--line:#2f4433;--soft:#26402b}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Georgia,"Noto Serif",serif}
+main{max-width:560px;margin:0 auto;padding:16px}
+h1{font-size:1.5rem;margin:.2em 0}p{margin:.4em 0}.mut{color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0}
+button{font:inherit;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;margin:5px 0;width:100%;text-align:left;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--acc)}
+button.go{background:var(--acc);color:var(--bg);border-color:var(--acc);text-align:center;font-weight:bold}
+button.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 20%,var(--card))}
+button.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 16%,var(--card))}
+button.sel{border-color:var(--acc);background:var(--soft)}
+button:disabled{opacity:.6;cursor:default}
+.bar{height:8px;background:var(--line);border-radius:6px;overflow:hidden;margin:8px 0}.bar i{display:block;height:100%;background:var(--acc);transition:width .3s}
+.tag{display:inline-block;font-size:.85rem;padding:2px 10px;border-radius:20px;background:var(--soft)}
+.hud{display:flex;justify-content:space-between;align-items:center;font-size:.95rem}
+.big{font-size:4.5rem;text-align:center;line-height:1.2;margin:0}
+.fb{min-height:1.6em;font-size:.95rem}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row{display:flex}.c{width:28px;height:28px;border:1px solid var(--line);margin:1px;text-align:center;line-height:26px;font-weight:bold;font-size:.9rem}
+.c.on{background:var(--card);border-color:var(--acc)}.c.k{background:var(--soft)}.c.sp{border:0}
+input{font:inherit;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:8px;padding:8px;width:100%;text-transform:uppercase}
+.node{text-align:center;padding:8px;border-radius:10px;background:var(--soft);border:1.5px solid var(--acc);margin:2px 0}.node.e{background:transparent;border-style:dashed;color:var(--mut)}
+.hub{display:flex;justify-content:space-between;gap:8px;align-items:center}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<script>
+var app=document.getElementById("app"),S={},M={},busy=false;
+function sh(a){return a.slice().sort(function(){return Math.random()-.5})}
+var GAMES=[["test","1. Тест","А, Ә, Б",8,"Блум таксономиясы, Выготский: өз деңгейіңді таңда"],["pic","2. Суретті анықта","А, Ә, Б",8,"Визуалды қабылдау (Гарднер)"],["match","3. Сәйкестендір","Ә",5,"Аналитикалық ойлау, Блум: қолдану"],["order","4. Процесті ретімен қой","Ә",5,"Логикалық-тізбектік ойлау (Гарднер)"],["cross","5. Сөзжұмбақ","Б",4,"Тілдік қабілет, Блум: талдау"]];
+function total(){var t=0,m=0;GAMES.forEach(function(g){m+=(S[g[0]]!==undefined?M[g[0]]:0);t+=S[g[0]]||0});return [t,m]}
+function hub(){var t=total();
+app.innerHTML='<h1>Биология: 5 ойын</h1><p class="mut">8-сынып. Саралап оқыту: әр ойын өз тәсілімен және өз деңгейімен жұмыс істейді.</p><details class="card"><summary><b>Теориялық негіз (мұғалімге)</b></summary><p><b>Блум таксономиясы:</b> А деңгей: білу, түсіну; Ә: қолдану; Б: талдау, бағалау.</p><p><b>Выготский:</b> оқушы жақын даму аймағында жұмыс істейді, нәтижеге қарай келесі деңгейге өтеді.</p><p><b>Гарднер:</b> сурет визуалды, сөзжұмбақ тілдік, процесс логикалық қабілетке сүйенеді.</p><p><b>Томлинсон:</b> мазмұн бір (биология), ал тәсіл, процесс және деңгей әртүрлі.</p></details><div class="bar"><i style="width:'+(t[1]?t[0]/t[1]*100:0)+'%"></i></div><p>Жалпы ұпай: <b>'+t[0]+' / '+t[1]+'</b></p>'+
+GAMES.map(function(g){var d=S[g[0]]!==undefined;return '<button onclick="'+g[0]+'()"><span class="hub"><span>'+g[1]+'<br><span class="mut" style="font-size:.85rem">'+(d?'Нәтиже: '+S[g[0]]+' / '+(M[g[0]]||g[3]):'Әлі ойналмады')+'<br><i>'+g[4]+'</i>'+'</span></span><span class="tag">'+g[2]+'</span></span></button>'}).join("")}
+function head(t,n,m,sc){return '<div class="hud"><span class="tag">'+t+'</span><span>Ұпай: '+sc+'</span></div><div class="bar"><i style="width:'+n/m*100+'%"></i></div>'}
+function fin(id,sc,max){S[id]=sc;M[id]=max;app.innerHTML='<h1>Дайын!</h1><div class="card"><p style="font-size:2rem;margin:0">'+sc+' / '+max+'</p></div><button class="go" onclick="hub()">Ойындар тізіміне</button><button class="go" onclick="'+id+'()">Қайта ойнау</button>'}
+/* choice engine */
+function choice(id,tag,items,big){var i=0,sc=0;
+function show(){if(i>=items.length)return fin(id,sc,items.length);var q=items[i];busy=false;
+app.innerHTML=head(tag,i,items.length,sc)+'<div class="card">'+(q.pic?'<p class="big">'+q.pic+'</p>':'')+'<p>'+q.q+'</p>'+sh(q.o.slice()).map(function(t){return '<button data-t="'+t+'">'+t+'</button>'}).join("")+'<p class="fb" id="fb"></p></div>';
+[].forEach.call(app.querySelectorAll("button[data-t]"),function(b){b.onclick=function(){if(busy)return;busy=true;var r=b.dataset.t==q.o[0];
+if(r){sc++;b.classList.add("ok")}else{b.classList.add("bad");[].forEach.call(app.querySelectorAll("button[data-t]"),function(x){if(x.dataset.t==q.o[0])x.classList.add("ok")})}
+document.getElementById("fb").textContent=r?"Дұрыс!":"Дұрыс жауап: "+q.o[0];i++;setTimeout(show,1000)}})}
+show()}
+function testB(){choice("test","Тест: Б деңгей",sh([
+{q:"Жүгіргеннен кейін тыныс жиілейді. Негізгі себебі қайсы?",o:["Бұлшықетте O₂ қажеттілігі артады, CO₂ көбейеді","Өкпе көлемі кішірейеді","Қан мөлшері азаяды","Бүйрек жұмысы күшейеді"]},
+{q:"Несептен ақуыз табылды. Қай процестің бұзылуы мүмкін?",o:["Бүйректегі сүзілу","Асқазандағы ыдырау","Альвеоладағы газ алмасу","Өттің түзілуі"]},
+{q:"Үлкен қан айналым шеңбері қай жерде аяқталады?",o:["Оң жүрекшеде","Сол қарыншада","Сол жүрекшеде","Оң қарыншада"]},
+{q:"Көмірқышқыл газына бай қан өкпеге қай тамырмен барады?",o:["Өкпе артериясымен","Өкпе венасымен","Қолқамен","Қуыс веналармен"]},
+{q:"Инсулин жетіспесе, қандағы глюкоза деңгейі қалай өзгереді?",o:["Артады","Азаяды","Өзгермейді","Қан ұюы бұзылады"]},
+{q:"Рефлекс доғасының дұрыс реті қайсы?",o:["Рецептор → сезімтал нейрон → орталық → қозғалтқыш нейрон → орган","Орган → орталық → рецептор → сезімтал нейрон","Орталық → рецептор → қозғалтқыш нейрон → орган","Рецептор → қозғалтқыш нейрон → орталық → орган"]},
+{q:"Эритроциттерде ядро жоқ. Бұл не береді?",o:["Гемоглобинге орын көп, O₂ көбірек тасымалданады","Микробтарды жою қабілеті артады","Қан тез ұйиды","Жасуша тез бөлінеді"]},
+{q:"Тыныс шығарғанда диафрагма қандай күйде болады?",o:["Босаңсып, күмбез тәрізді жоғары көтеріледі","Жиырылып, жалпаяды","Төмен түседі","Өзгермейді"]}]))}
+function picB(){choice("pic","Суретті анықта: Б деңгей",sh([
+{pic:"🫁",q:"Бұл мүшеде қандай процесс жүреді?",o:["Қан мен ауа арасындағы газ алмасу","Несеп түзілу","Ақуыздың ыдырауы","Қан жасушаларының түзілуі"]},
+{pic:"🫀",q:"Бұл мүше қай жүйеге жатады, қызметі қандай?",o:["Қан айналым: қанды айдайды","Тыныс алу: газ алмастырады","Бөліп шығару: қанды сүзеді","Ас қорыту: тағамды ыдыратады"]},
+{pic:"🧠",q:"Бұл мүше қай жүйенің орталық бөлігі?",o:["Жүйке жүйесінің","Эндокриндік жүйенің","Қан айналым жүйесінің","Тірек-қимыл жүйесінің"]},
+{pic:"🦴",q:"Бұл ұлпаның құрамындағы қызыл кемік майы нені түзеді?",o:["Қан жасушаларын","Өтті","Инсулинді","Несепті"]},
+{pic:"👂",q:"Есту рецепторлары қай бөлікте орналасқан?",o:["Ішкі құлақтағы ұлуда","Сыртқы құлақта","Дабыл жарғағында","Евстахий түтігінде"]},
+{pic:"👁️",q:"Жарықты қабылдайтын рецепторлар қайда?",o:["Торлы қабықта","Мөлдір қабықта","Қарашықта","Көз бұршағында"]},
+{pic:"🩸",q:"Қанның қай құрамдас бөлігі қан ұюына қатысады?",o:["Тромбоциттер","Эритроциттер","Лейкоциттер","Қан плазмасының тұздары"]},
+{pic:"🫘",q:"Бүйрек пішінді сурет. Осы мүшенің құрылымдық-қызметтік бірлігі қайсы?",o:["Нефрон","Альвеола","Нейрон","Сүйек қыртысы"]}]))}
+/* matching */
+function match(){var P=[["Эритроцит","Оттекті тасымалдайды"],["Лейкоцит","Микробтарды жояды"],["Тромбоцит","Қанның ұюына қатысады"],["Бүйрек","Несеп түзеді"],["Альвеола","Газ алмасу жүреді"]],L=sh(P.map(function(p){return p[0]})),R=sh(P.map(function(p){return p[1]})),sel=null,done={},mis=0,n=0;
+function draw(){app.innerHTML=head("Сәйкестендір",n,5,Math.max(0,n-mis))+'<div class="card"><p>Сол жақтағыдан бастап, оның қызметін тап.</p><div class="g2"><div>'+L.map(function(t){return '<button data-l="'+t+'" class="'+(done[t]?'ok':sel==t?'sel':'')+'" '+(done[t]?'disabled':'')+'>'+t+'</button>'}).join("")+'</div><div>'+R.map(function(t){var d=P.some(function(p){return p[1]==t&&done[p[0]]});return '<button data-r="'+t+'" class="'+(d?'ok':'')+'" '+(d?'disabled':'')+' style="font-size:.9rem">'+t+'</button>'}).join("")+'</div></div><p class="fb" id="fb"></p></div>';
+[].forEach.call(app.querySelectorAll("[data-l]"),function(b){b.onclick=function(){sel=b.dataset.l;draw()}});
+[].forEach.call(app.querySelectorAll("[data-r]"),function(b){b.onclick=function(){if(!sel){document.getElementById("fb").textContent="Алдымен сол жақтан таңда.";return}
+var ok=P.some(function(p){return p[0]==sel&&p[1]==b.dataset.r});if(ok){done[sel]=1;n++;sel=null;if(n==5)return setTimeout(function(){fin("match",Math.max(0,5-mis),5)},600);draw()}else{mis++;sel=null;draw();document.getElementById("fb").textContent="Сәйкес емес. Қайта көр."}}})}
+draw()}
+/* order */
+function order(){var ST=["Ауыз қуысы","Өңеш","Асқазан","Жіңішке ішек","Тоқ ішек"],pool=sh(ST.map(function(s,k){return k})),sel=[],sc=0;
+function draw(){app.innerHTML=head("Ас қорыту жолы",sel.length,5,sc)+'<div class="card"><p>Тағам жолын ретімен таңда: ауыздан бастап.</p>'+ST.map(function(s,k){return k<sel.length?'<div class="node">'+(k+1)+'. '+s+'</div>':'<div class="node e">'+(k+1)+'-қадам</div>'}).join("")+'<div style="margin-top:8px">'+pool.map(function(k){return sel.indexOf(k)<0?'<button data-k="'+k+'">'+ST[k]+'</button>':''}).join("")+'</div><p class="fb" id="fb"></p></div>';
+[].forEach.call(app.querySelectorAll("[data-k]"),function(b){b.onclick=function(){var k=+b.dataset.k;if(k==sel.length){sel.push(k);sc++;if(sel.length==5)return setTimeout(function(){fin("order",5-Math.min(mis,5),5)},500);draw()}else{mis++;draw();document.getElementById("fb").textContent="Бұл қадам әлі ертерек."}}})}
+var mis=0;draw()}
+/* crossword */
+function cross(){var W=[["ӨТ",0,"Бауыр бөлетін, майды ерітуге көмектесетін сұйықтық"],["БҮЙРЕК",5,"Несеп түзетін мүше"],["ПЕПСИН",0,"Асқазандағы ақуызды ыдырататын фермент"],["ЖҮРЕК",3,"Қан айналымның орталық мүшесі"]],ok=[0,0,0,0];
+function grid(){return W.map(function(w,r){var s='<div class="row">';for(var x=0;x<5-w[1];x++)s+='<div class="c sp"></div>';
+for(var j=0;j<w[0].length;j++)s+='<div class="c '+(ok[r]?'on':'')+(j==w[1]?' k':'')+'">'+(ok[r]?w[0][j]:'')+'</div>';return s+'</div>'}).join("")}
+function upd(){document.getElementById("gr").innerHTML=grid();var n=ok.reduce(function(a,b){return a+b},0);document.getElementById("st").textContent=n==4?"Түйінді сөз: ӨКПЕ":"Тапқаны: "+n+" / 4"}
+app.innerHTML='<div class="hud"><span class="tag">Сөзжұмбақ</span></div><div class="card"><p>Жауапты жаз. Боялған торлардан түйінді сөзді оқы (жоғарыдан төмен): тыныс алу мүшесі.</p><div id="gr" style="overflow-x:auto">'+grid()+'</div><p><b id="st">Тапқаны: 0 / 4</b></p>'+W.map(function(w,r){return '<p style="margin-top:12px">'+(r+1)+'. '+w[2]+' ('+w[0].length+' әріп)</p><input data-r="'+r+'" autocomplete="off" aria-label="'+(r+1)+'-сөз">'}).join("")+'</div><button class="go" id="fn">Аяқтау</button>';
+[].forEach.call(app.querySelectorAll("input"),function(inp){inp.oninput=function(){var r=+inp.dataset.r;if(inp.value.trim().toUpperCase()==W[r][0]){ok[r]=1;inp.disabled=true;inp.style.borderColor="var(--ok)"}upd()}});
+document.getElementById("fn").onclick=function(){fin("cross",ok.reduce(function(a,b){return a+b},0),4)}}
+function lvl(id,tag){app.innerHTML='<h1>'+tag+'</h1><p class="mut">Деңгейіңді таңда (Блум таксономиясы).</p>'+[["A","А: білу, түсіну","Негізгі ұғымдар мен атаулар"],["E","Ә: қолдану","Жағдай, себеп пен салдар"],["B","Б: талдау","Күрделі жағдай, қорытынды"]].map(function(l){return '<button onclick="'+id+l[0]+'()"><b>'+l[1]+'</b><br><span class="mut" style="font-size:.85rem">'+l[2]+'</span></button>'}).join("")+'<button onclick="hub()">Артқа</button>'}
+function test(){lvl("test","1. Тест")}
+function pic(){lvl("pic","2. Суретті анықта")}
+function testA(){choice("test","Тест: А деңгей",sh([
+{q:"Қанның оттекті тасымалдайтын жасушасы қайсы?",o:["Эритроцит","Лейкоцит","Тромбоцит"]},
+{q:"Несеп қай мүшеде түзіледі?",o:["Бүйрек","Бауыр","Асқазан"]},
+{q:"Қан айналымның орталық мүшесі қайсы?",o:["Жүрек","Өкпе","Бүйрек"]},
+{q:"Газ алмасу қай жерде жүреді?",o:["Альвеолада","Кеңірдекте","Көмейде"]},
+{q:"Бұлшықетті сүйекке бекітетін құрылым қайсы?",o:["Сіңір","Шеміршек","Қан тамыры"]}]))}
+function testE(){choice("test","Тест: Ә деңгей",sh([
+{q:"Ауа жолы қай ретпен өтеді?",o:["Мұрын → кеңірдек → бронх → альвеола","Мұрын → бронх → кеңірдек → альвеола","Альвеола → бронх → мұрын"]},
+{q:"Жарақаттан қан ағып, тез тоқтады. Қай жасушалар қатысты?",o:["Тромбоциттер","Эритроциттер","Лейкоциттер"]},
+{q:"Қыста мұрынмен тыныс алған дұрыс. Неге?",o:["Мұрында ауа жылынып, тазарады","Газ алмасу мұрында жүреді","Ауа көбірек кіреді"]},
+{q:"Бүйрек жұмысы нашарласа, қанда не жиналады?",o:["Зиянды алмасу өнімдері","Артық оттек","Қосымша эритроциттер"]},
+{q:"Қолыңды ыстық затқа тигізіп, тез тарттың. Бұл не?",o:["Рефлекс","Ойлану","Секреция"]}]))}
+function picA(){var N={"🫁":"Өкпе","🫀":"Жүрек","🧠":"Ми","🦴":"Сүйек","👂":"Құлақ","👁️":"Көз"},ks=Object.keys(N),names=ks.map(function(k){return N[k]});choice("pic","Суретті анықта: А деңгей",sh(ks).map(function(k){var w=sh(names.filter(function(n){return n!=N[k]})).slice(0,2);return {pic:k,q:"Бұл қай мүше?",o:[N[k]].concat(w)}}))}
+function picE(){var Q=[["🫁","Газ алмасу",["Қанды сүзу","Тағамды ыдырату"]],["🫀","Қанды айдау",["Газ алмасу","Несеп түзу"]],["🧠","Ағза жұмысын реттеу",["Қанды тазалау","Оттек тасымалдау"]],["🦴","Тірек болу, мүшелерді қорғау",["Тағамды қорыту","Гормон бөлу"]],["👂","Есту және тепе-теңдік",["Иіс сезу","Дәм сезу"]],["👁️","Көру",["Есту","Иіс сезу"]]];choice("pic","Суретті анықта: Ә деңгей",sh(Q).map(function(x){return {pic:x[0],q:"Бұл мүшенің негізгі қызметі қандай?",o:[x[1]].concat(x[2])}}))}
+hub();
+</script>
+</body>
+</html>
